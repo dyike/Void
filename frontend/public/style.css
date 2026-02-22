@@ -1,0 +1,485 @@
+/* ─────────────────────────────────────────────
+   Void Launcher – Base Styles
+   ───────────────────────────────────────────── */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: rgba(255,255,255,0.9);
+}
+
+/* ─── Custom Scrollbar ─────────────────────── */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.15);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ─── Launcher Shell ───────────────────────── */
+.launcher {
+  width: 100%;
+  height: 100%;
+  background: rgba(14, 14, 18, 0.88);
+  backdrop-filter: blur(40px) saturate(180%);
+  -webkit-backdrop-filter: blur(40px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: launcher-in 0.18s cubic-bezier(0.23,1,0.32,1);
+}
+
+@keyframes launcher-in {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ─── Search Bar ───────────────────────────── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+
+.search-icon {
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+}
+
+.search-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 15px;
+  font-family: inherit;
+  font-weight: 500;
+  color: rgba(255,255,255,0.95);
+  letter-spacing: 0.005em;
+}
+
+.search-input::placeholder {
+  color: rgba(255,255,255,0.35);
+}
+
+.search-clear {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  color: rgba(255,255,255,0.3);
+  display: flex;
+  align-items: center;
+  transition: color .15s;
+}
+.search-clear:hover { color: rgba(255,255,255,0.65); }
+
+/* ─── Command List ─────────────────────────── */
+.command-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.section-label {
+  padding: 8px 12px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.3);
+}
+
+.command-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.1s;
+  user-select: none;
+}
+.command-item:hover       { background: rgba(255,255,255,0.06); }
+.command-item.selected    { background: rgba(255,255,255,0.10); }
+
+.command-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  background: rgba(255,255,255,0.06);
+  overflow: hidden;
+}
+.command-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.command-text {
+  flex: 1;
+  min-width: 0;
+}
+.command-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.92);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.command-subtitle {
+  font-size: 11px;
+  color: rgba(255,255,255,0.35);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.command-hint {
+  font-size: 11px;
+  color: rgba(255,255,255,0.3);
+  flex-shrink: 0;
+}
+
+/* ─── Loading ──────────────────────────────── */
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  color: rgba(255,255,255,0.4);
+  font-size: 13px;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 40px;
+  color: rgba(255,255,255,0.35);
+  font-size: 14px;
+}
+
+/* ─── Footer ───────────────────────────────── */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.footer-left {
+  font-size: 12px;
+  color: rgba(255,255,255,0.3);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background .15s;
+  background: rgba(255,255,255,0.07);
+  color: rgba(255,255,255,0.70);
+}
+.footer-btn:hover { background: rgba(255,255,255,0.12); }
+.footer-btn.primary {
+  background: rgba(99,102,241,0.25);
+  color: rgba(180,183,255,0.92);
+}
+.footer-btn.primary:hover { background: rgba(99,102,241,0.38); }
+
+kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 4px;
+  border-radius: 4px;
+  background: rgba(255,255,255,0.08);
+  font-size: 11px;
+  font-family: inherit;
+  font-weight: 500;
+  color: rgba(255,255,255,0.65);
+}
+
+/* ─── Clipboard / AI / Settings overlay ────── */
+.view-overlay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* ─── Clipboard split ─────────────────────── */
+.clipboard-split {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+.clipboard-list {
+  width: 40%;
+  overflow-y: auto;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  padding: 6px;
+}
+.clipboard-preview {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.clip-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background .1s;
+}
+.clip-item:hover    { background: rgba(255,255,255,0.05); }
+.clip-item.selected { background: rgba(255,255,255,0.09); }
+
+.clip-icon {
+  color: rgba(255,255,255,0.35);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.clip-text {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  color: rgba(255,255,255,0.80);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.preview-content {
+  font-size: 12px;
+  font-family: 'Menlo', 'Monaco', monospace;
+  color: rgba(255,255,255,0.75);
+  white-space: pre-wrap;
+  word-break: break-all;
+  line-height: 1.6;
+}
+
+/* ─── AI Chat ─────────────────────────────── */
+.ai-chat {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.ai-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.ai-msg {
+  display: flex;
+  gap: 10px;
+}
+.ai-msg.user { flex-direction: row-reverse; }
+.ai-bubble {
+  max-width: 78%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ai-msg.user  .ai-bubble { background: rgba(99,102,241,0.25); color: rgba(200,202,255,0.95); }
+.ai-msg.assistant .ai-bubble { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+
+.ai-input-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+.ai-input {
+  flex: 1;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  color: rgba(255,255,255,0.9);
+  outline: none;
+  resize: none;
+  transition: border-color .15s;
+}
+.ai-input:focus { border-color: rgba(99,102,241,0.4); }
+
+.ai-send-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(99,102,241,0.30);
+  color: rgba(180,183,255,0.92);
+  transition: background .15s;
+  flex-shrink: 0;
+}
+.ai-send-btn:hover:not(:disabled) { background: rgba(99,102,241,0.50); }
+.ai-send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+/* ─── Settings ────────────────────────────── */
+.settings-view {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.settings-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.35);
+  margin-bottom: 8px;
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+.settings-label {
+  font-size: 13px;
+  color: rgba(255,255,255,0.75);
+}
+.settings-input {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: rgba(255,255,255,0.88);
+  outline: none;
+  width: 200px;
+  transition: border-color .15s;
+}
+.settings-input:focus { border-color: rgba(99,102,241,0.4); }
+.settings-select {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  color: rgba(255,255,255,0.88);
+  outline: none;
+}
+.settings-save-btn {
+  padding: 8px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  background: rgba(99,102,241,0.28);
+  color: rgba(180,183,255,0.95);
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  transition: background .15s;
+  align-self: flex-start;
+}
+.settings-save-btn:hover { background: rgba(99,102,241,0.44); }
+
+/* ─── Filter tabs (clipboard) ─────────────── */
+.filter-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 6px 14px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  flex-shrink: 0;
+}
+.filter-tab {
+  padding: 3px 10px;
+  font-size: 12px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background .12s;
+  background: transparent;
+  color: rgba(255,255,255,0.40);
+}
+.filter-tab:hover { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.70); }
+.filter-tab.active { background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.90); }
