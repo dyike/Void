@@ -7,9 +7,11 @@ import (
 	"path/filepath"
 
 	"github.com/dyike/Void/internal/service/ai"
+	"github.com/dyike/Void/internal/service/calculator"
 	"github.com/dyike/Void/internal/service/clipboard"
 	"github.com/dyike/Void/internal/service/commands"
 	"github.com/dyike/Void/internal/service/settings"
+	"github.com/dyike/Void/internal/service/snippets"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -33,6 +35,8 @@ func main() {
 	commandsSvc := commands.NewService(dataDir)
 	clipboardSvc := clipboard.NewService(dataDir)
 	aiSvc := ai.NewService(settingsSvc)
+	snippetsSvc := snippets.NewService(dataDir)
+	calcSvc := calculator.NewService()
 
 	// Start background clipboard polling
 	clipboardSvc.Start()
@@ -53,6 +57,8 @@ func main() {
 			application.NewService(commandsSvc),
 			application.NewService(clipboardSvc),
 			application.NewService(aiSvc),
+			application.NewService(snippetsSvc),
+			application.NewService(calcSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

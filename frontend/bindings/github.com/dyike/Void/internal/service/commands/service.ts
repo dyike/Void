@@ -15,7 +15,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
- * GetCommands returns cached commands, refreshing if stale.
+ * GetCommands returns cached + frecency-boosted commands.
  */
 export function GetCommands(): $CancellablePromise<$models.CommandInfo[]> {
     return $Call.ByID(4050364337).then(($result: any) => {
@@ -38,10 +38,33 @@ export function OpenSystemSettings(bundleID: string): $CancellablePromise<void> 
 }
 
 /**
- * RefreshCommands forces a re-discovery and returns the new list.
+ * OpenURL opens a URL in the default browser.
+ */
+export function OpenURL(url: string): $CancellablePromise<void> {
+    return $Call.ByID(34828798, url);
+}
+
+/**
+ * RecordUsage records that a command was used (for frecency).
+ */
+export function RecordUsage(id: string): $CancellablePromise<void> {
+    return $Call.ByID(1696166431, id);
+}
+
+/**
+ * RefreshCommands forces a re-discovery.
  */
 export function RefreshCommands(): $CancellablePromise<$models.CommandInfo[]> {
     return $Call.ByID(2802057942).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
+ * SearchFiles searches for files using Spotlight.
+ */
+export function SearchFiles(query: string): $CancellablePromise<$models.CommandInfo[]> {
+    return $Call.ByID(370936336, query).then(($result: any) => {
         return $$createType1($result);
     });
 }

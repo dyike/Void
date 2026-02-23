@@ -20,7 +20,7 @@ export class CommandInfo {
     "iconEmoji"?: string;
 
     /**
-     * "app" | "settings" | "system"
+     * "app" | "settings" | "system" | "snippet" | "file"
      */
     "category": string;
 
@@ -28,6 +28,7 @@ export class CommandInfo {
      * App path for apps, bundle ID for settings
      */
     "path"?: string;
+    "score"?: number;
 
     /** Creates a new CommandInfo instance. */
     constructor($$source: Partial<CommandInfo> = {}) {
