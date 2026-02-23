@@ -2,6 +2,7 @@ package settings
 
 import (
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 	"sync"
@@ -72,6 +73,7 @@ func (s *Service) GetSettings() (*AppSettings, error) {
 	s.mu.RLock()
 	if s.cache != nil {
 		cp := *s.cache
+		s.mu.RUnlock()
 		return &cp, nil
 	}
 	s.mu.RUnlock()
@@ -86,36 +88,36 @@ func (s *Service) GetSettings() (*AppSettings, error) {
 }
 
 // SaveSettings merges a patch into the current settings and persists.
-func (s *Service) SaveSettings(patch map[string]interface{}) (*AppSettings, error) {
+func (s *Service) SaveSettings(updated AppSettings) (*AppSettings, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
-	current := s.load()
-
-	// Marshal current to map, apply patch, unmarshal back
-	data, err := json.Marshal(current)
-	if err != nil {
-		return nil, err
+	// Fill in missing defaults if frontend omitted them
+	if updated.GlobalShortcut == "" {
+		updated.GlobalShortcut = defaultSettings.GlobalShortcut
 	}
-	var m map[string]interface{}
-	if err := json.Unmarshal(data, &m); err != nil {
-		return nil, err
+	if updated.FontSize == "" {
+		updated.FontSize = defaultSettings.FontSize
 	}
-	for k, v := range patch {
-		m[k] = v
+	if updated.BaseColor == "" {
+		updated.BaseColor = defaultSettings.BaseColor
 	}
-	merged, err := json.Marshal(m)
-	if err != nil {
-		return nil, err
+	if updated.AI.OllamaBaseUrl == "" {
+		updated.AI.OllamaBaseUrl = defaultAI.OllamaBaseUrl
 	}
-	var updated AppSettings
-	if err := json.Unmarshal(merged, &updated); err != nil {
-		return nil, err
+	if updated.AI.DefaultModel == "" {
+		updated.AI.DefaultModel = defaultAI.DefaultModel
 	}
 
 	// Persist
 	if out, err := json.MarshalIndent(updated, "", "  "); err == nil {
-		_ = os.WriteFile(s.path, out, 0644)
+		if err := os.WriteFile(s.path, out, 0644); err != nil {
+			log.Printf("settings: failed to write file: %v", err)
+		} else {
+			log.Printf("settings: saved successfully to %s", s.path)
+		}
+	} else {
+		log.Printf("settings: failed to marshal for persist: %v", err)
 	}
 
 	s.cache = &updated
@@ -125,7 +127,16 @@ func (s *Service) SaveSettings(patch map[string]interface{}) (*AppSettings, erro
 
 // SetGlobalHotkey updates only the GlobalShortcut setting.
 func (s *Service) SetGlobalHotkey(spec string) error {
-	_, err := s.SaveSettings(map[string]interface{}{"globalShortcut": spec})
+	s.mu.RLock()
+	current := s.cache
+	if current == nil {
+		current = s.load()
+	}
+	s.mu.RUnlock()
+
+	cp := *current
+	cp.GlobalShortcut = spec
+	_, err := s.SaveSettings(cp)
 	return err
 }
 

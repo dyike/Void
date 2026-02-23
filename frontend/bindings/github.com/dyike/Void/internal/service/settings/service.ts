@@ -40,8 +40,8 @@ export function ResetCache(): $CancellablePromise<void> {
 /**
  * SaveSettings merges a patch into the current settings and persists.
  */
-export function SaveSettings(patch: { [_: string]: any }): $CancellablePromise<$models.AppSettings | null> {
-    return $Call.ByID(521226036, patch).then(($result: any) => {
+export function SaveSettings(updated: $models.AppSettings): $CancellablePromise<$models.AppSettings | null> {
+    return $Call.ByID(521226036, updated).then(($result: any) => {
         return $$createType1($result);
     });
 }

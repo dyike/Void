@@ -1,21 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
 
-interface AppSettings {
-    globalShortcut: string
-    fontSize: 'small' | 'medium' | 'large'
-    baseColor: string
-    ai: {
-        provider: 'openai' | 'anthropic' | 'ollama' | 'openai-compatible'
-        openaiApiKey: string
-        ollamaBaseUrl: string
-        defaultModel: string
-        openaiCompatibleBaseUrl: string
-        openaiCompatibleApiKey: string
-        openaiCompatibleModel: string
-        enabled: boolean
-    }
-}
+import { AppSettings } from '../bindings/github.com/dyike/Void/internal/service/settings/models.js'
 
 // ─── Hotkey Recorder ─────────────────────────────────────────────────────
 
@@ -133,12 +119,12 @@ const SettingsView: React.FC = () => {
             .catch(console.error)
     }, [])
 
-    const update = <K extends keyof AppSettings>(key: K, value: AppSettings[K]) => {
-        setSettings(prev => prev ? { ...prev, [key]: value } : prev)
+    const update = <K extends keyof AppSettings>(key: K, value: any) => {
+        setSettings(prev => prev ? { ...prev, [key]: value } as AppSettings : prev)
     }
 
-    const updateAI = <K extends keyof AppSettings['ai']>(key: K, value: AppSettings['ai'][K]) => {
-        setSettings(prev => prev ? { ...prev, ai: { ...prev.ai, [key]: value } } : prev)
+    const updateAI = <K extends keyof AppSettings['ai']>(key: K, value: any) => {
+        setSettings(prev => prev ? { ...prev, ai: { ...prev.ai, [key]: value } } as AppSettings : prev)
     }
 
     const handleHotkeyChange = async (spec: string) => {
@@ -158,7 +144,8 @@ const SettingsView: React.FC = () => {
         if (!settings) return
         setSaving(true)
         try {
-            await SettingsService.SaveSettings(settings as any)
+            const updated = AppSettings.createFrom(settings)
+            await SettingsService.SaveSettings(updated)
             setSaved(true)
             setTimeout(() => setSaved(false), 2000)
         } catch (e) {
