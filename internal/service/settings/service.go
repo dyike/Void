@@ -40,7 +40,7 @@ var defaultAI = AISettings{
 }
 
 var defaultSettings = AppSettings{
-	GlobalShortcut:   "Alt+Space",
+	GlobalShortcut:   "option+space",
 	PinnedCommands:   []string{},
 	RecentCommands:   []string{},
 	DisabledCommands: []string{},
@@ -121,6 +121,29 @@ func (s *Service) SaveSettings(patch map[string]interface{}) (*AppSettings, erro
 	s.cache = &updated
 	cp := updated
 	return &cp, nil
+}
+
+// SetGlobalHotkey updates only the GlobalShortcut setting.
+func (s *Service) SetGlobalHotkey(spec string) error {
+	_, err := s.SaveSettings(map[string]interface{}{"globalShortcut": spec})
+	return err
+}
+
+// GetGlobalHotkey returns the persisted global hotkey spec string.
+func (s *Service) GetGlobalHotkey() string {
+	st, err := s.GetSettings()
+	if err != nil || st.GlobalShortcut == "" {
+		return "option+space"
+	}
+	// Normalize legacy "Alt+Space" → "option+space"
+	legacy := map[string]string{
+		"Alt+Space": "option+space",
+		"Cmd+Space": "cmd+space",
+	}
+	if v, ok := legacy[st.GlobalShortcut]; ok {
+		return v
+	}
+	return st.GlobalShortcut
 }
 
 // ResetCache forces a reload from disk on next access.

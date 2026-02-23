@@ -15,6 +15,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * ExecuteSystemCommand runs a built-in macOS system command by ID.
+ */
+export function ExecuteSystemCommand(id: string): $CancellablePromise<void> {
+    return $Call.ByID(2336967266, id);
+}
+
+/**
  * GetCommands returns cached + frecency-boosted commands.
  */
 export function GetCommands(): $CancellablePromise<$models.CommandInfo[]> {

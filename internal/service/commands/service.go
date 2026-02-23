@@ -79,6 +79,10 @@ func (s *Service) RefreshCommands() ([]CommandInfo, error) {
 	}
 	all = append(all, apps...)
 
+	// Discover System Settings panes
+	settingsPanes := s.discoverSettingsPanes()
+	all = append(all, settingsPanes...)
+
 	s.cache = all
 	s.cacheTime = time.Now()
 
@@ -106,6 +110,33 @@ func (s *Service) OpenSystemSettings(bundleID string) error {
 	cmd := exec.Command("open", "x-apple.systempreferences:"+bundleID)
 	if err := cmd.Run(); err != nil {
 		return exec.Command("open", "-b", "com.apple.systempreferences").Run()
+	}
+	return nil
+}
+
+// ExecuteSystemCommand runs a built-in macOS system command by ID.
+func (s *Service) ExecuteSystemCommand(id string) error {
+	switch id {
+	case "system-lock-screen":
+		return exec.Command("pmset", "displaysleepnow").Run()
+	case "system-sleep":
+		return exec.Command("pmset", "sleepnow").Run()
+	case "system-empty-trash":
+		script := `tell application "Finder" to empty the trash`
+		return exec.Command("osascript", "-e", script).Run()
+	case "system-restart":
+		script := `tell application "System Events" to restart`
+		return exec.Command("osascript", "-e", script).Run()
+	case "system-shutdown":
+		script := `tell application "System Events" to shut down`
+		return exec.Command("osascript", "-e", script).Run()
+	case "system-open-finder":
+		return exec.Command("open", "-a", "Finder").Run()
+	case "system-open-terminal":
+		return exec.Command("open", "-a", "Terminal").Run()
+	case "system-show-desktop":
+		script := `tell application "System Events" to key code 103 using {command down, mission control key down}`
+		return exec.Command("osascript", "-e", script).Run()
 	}
 	return nil
 }
@@ -153,33 +184,51 @@ func (s *Service) SearchFiles(query string) ([]CommandInfo, error) {
 
 func systemCommands() []CommandInfo {
 	return []CommandInfo{
+		// ── Void built-ins ──────────────────────────
 		{
-			ID:        "system-clipboard-manager",
-			Title:     "Clipboard History",
-			Subtitle:  "Browse your clipboard history",
-			IconEmoji: "📋",
-			Category:  "system",
+			ID: "system-clipboard-manager", Title: "Clipboard History",
+			Subtitle: "Browse your clipboard history", IconEmoji: "📋", Category: "system",
 		},
 		{
-			ID:        "system-ai-chat",
-			Title:     "AI Chat",
-			Subtitle:  "Chat with AI assistant",
-			IconEmoji: "✨",
-			Category:  "system",
+			ID: "system-ai-chat", Title: "AI Chat",
+			Subtitle: "Chat with AI assistant", IconEmoji: "✨", Category: "system",
 		},
 		{
-			ID:        "system-snippets",
-			Title:     "Snippets",
-			Subtitle:  "Manage text snippets",
-			IconEmoji: "📝",
-			Category:  "system",
+			ID: "system-snippets", Title: "Snippets",
+			Subtitle: "Manage text snippets", IconEmoji: "📝", Category: "system",
 		},
 		{
-			ID:        "system-settings",
-			Title:     "Void Settings",
-			Subtitle:  "Configure Void",
-			IconEmoji: "⚙️",
-			Category:  "system",
+			ID: "system-settings", Title: "Void Settings",
+			Subtitle: "Configure Void", IconEmoji: "⚙️", Category: "system",
+		},
+		// ── macOS system actions ───────────────────
+		{
+			ID: "system-lock-screen", Title: "Lock Screen",
+			Subtitle: "Turn off displays and lock", IconEmoji: "🔒", Category: "system",
+		},
+		{
+			ID: "system-sleep", Title: "Sleep",
+			Subtitle: "Put Mac to sleep", IconEmoji: "💤", Category: "system",
+		},
+		{
+			ID: "system-empty-trash", Title: "Empty Trash",
+			Subtitle: "Permanently delete trashed files", IconEmoji: "🗑️", Category: "system",
+		},
+		{
+			ID: "system-restart", Title: "Restart",
+			Subtitle: "Restart your Mac", IconEmoji: "🔄", Category: "system",
+		},
+		{
+			ID: "system-shutdown", Title: "Shut Down",
+			Subtitle: "Shut down your Mac", IconEmoji: "⏻", Category: "system",
+		},
+		{
+			ID: "system-open-finder", Title: "Open Finder",
+			Subtitle: "Open Finder", IconEmoji: "📂", Category: "system",
+		},
+		{
+			ID: "system-open-terminal", Title: "Open Terminal",
+			Subtitle: "Open Terminal", IconEmoji: "💻", Category: "system",
 		},
 	}
 }
@@ -234,6 +283,48 @@ func (s *Service) discoverAppsSpotlight() []CommandInfo {
 		return results[i].Title < results[j].Title
 	})
 
+	return results
+}
+
+// ─── System Settings Pane Discovery ───────────────────────────────────────
+
+// discoverSettingsPanes discovers macOS System Settings panes from PreferencePanes.
+func (s *Service) discoverSettingsPanes() []CommandInfo {
+	searchDirs := []string{
+		"/System/Library/PreferencePanes",
+		"/Library/PreferencePanes",
+		filepath.Join(os.Getenv("HOME"), "Library", "PreferencePanes"),
+	}
+
+	seen := map[string]bool{}
+	var results []CommandInfo
+
+	for _, dir := range searchDirs {
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !strings.HasSuffix(e.Name(), ".prefPane") {
+				continue
+			}
+			name := strings.TrimSuffix(e.Name(), ".prefPane")
+			id := "settings-" + slugify(name)
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			fullPath := filepath.Join(dir, e.Name())
+			results = append(results, CommandInfo{
+				ID:        id,
+				Title:     name,
+				Subtitle:  "System Settings",
+				IconEmoji: "🔧",
+				Category:  "settings",
+				Path:      fullPath,
+			})
+		}
+	}
 	return results
 }
 

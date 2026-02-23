@@ -10,7 +10,9 @@ import { Create as $Create } from "@wailsio/runtime";
  */
 export class CalcResult {
     "input": string;
+    "inputLabel"?: string;
     "result": string;
+    "resultLabel"?: string;
     "isValid": boolean;
 
     /** Creates a new CalcResult instance. */

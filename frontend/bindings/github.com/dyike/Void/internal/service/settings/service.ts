@@ -15,6 +15,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * GetGlobalHotkey returns the persisted global hotkey spec string.
+ */
+export function GetGlobalHotkey(): $CancellablePromise<string> {
+    return $Call.ByID(3502681061);
+}
+
+/**
  * GetSettings returns the current settings.
  */
 export function GetSettings(): $CancellablePromise<$models.AppSettings | null> {
@@ -37,6 +44,13 @@ export function SaveSettings(patch: { [_: string]: any }): $CancellablePromise<$
     return $Call.ByID(521226036, patch).then(($result: any) => {
         return $$createType1($result);
     });
+}
+
+/**
+ * SetGlobalHotkey updates only the GlobalShortcut setting.
+ */
+export function SetGlobalHotkey(spec: string): $CancellablePromise<void> {
+    return $Call.ByID(2565194761, spec);
 }
 
 // Private type creation functions

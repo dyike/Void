@@ -7,6 +7,7 @@ import AiChatView from './AiChatView'
 import SettingsView from './SettingsView'
 import SnippetsView from './SnippetsView'
 import ActionPanel, { buildActions } from './ActionPanel'
+import ScriptCommandsView from './ScriptCommandsView'
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -27,7 +28,7 @@ interface CalcResult {
   isValid: boolean
 }
 
-type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets'
+type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets' | 'scripts'
 
 const CATEGORY_ORDER = ['system', 'app', 'file', 'settings']
 const CATEGORY_LABELS: Record<string, string> = {
@@ -41,6 +42,7 @@ const SYSTEM_ICONS: Record<string, React.ReactNode> = {
   'system-clipboard-manager': <Clipboard size={15} />,
   'system-ai-chat': <Sparkles size={15} />,
   'system-snippets': <FileText size={15} />,
+  'system-scripts': <FileText size={15} />,
   'system-settings': <Settings size={15} />,
 }
 
@@ -160,9 +162,26 @@ const App: React.FC = () => {
     if (cmd.id === 'system-ai-chat') { setView('ai'); return }
     if (cmd.id === 'system-settings') { setView('settings'); return }
     if (cmd.id === 'system-snippets') { setView('snippets'); return }
+    if (cmd.id === 'system-scripts') { setView('scripts'); return }
+
+    // macOS system actions
+    const SYSTEM_ACTIONS = new Set([
+      'system-lock-screen', 'system-sleep', 'system-empty-trash',
+      'system-restart', 'system-shutdown', 'system-open-finder',
+      'system-open-terminal', 'system-show-desktop',
+    ])
+    if (SYSTEM_ACTIONS.has(cmd.id)) {
+      await CommandsService.ExecuteSystemCommand(cmd.id).catch(console.error)
+      return
+    }
+
+    // Record frecency
     CommandsService.RecordUsage(cmd.id).catch(() => { })
+
     if (cmd.category === 'app' && cmd.path) {
       await CommandsService.LaunchApp(cmd.path).catch(console.error)
+    } else if (cmd.category === 'settings' && cmd.path) {
+      await CommandsService.OpenURL('file://' + cmd.path).catch(console.error)
     } else if (cmd.category === 'file' && cmd.path) {
       await CommandsService.OpenURL('file://' + cmd.path).catch(console.error)
     }
@@ -217,7 +236,7 @@ const App: React.FC = () => {
   // ─── Sub-views ─────────────────────────────────────────────────────────
   if (view !== 'launcher') {
     const onBack = () => { setView('launcher'); setQuery('') }
-    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', settings: 'Void Settings', snippets: 'Snippets' }[view]
+    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', settings: 'Void Settings', snippets: 'Snippets', scripts: 'Script Commands' }[view]
     return (
       <div className="launcher" onKeyDown={handleKeyDown}>
         <div className="search-bar">
@@ -231,6 +250,7 @@ const App: React.FC = () => {
           {view === 'ai' && <AiChatView />}
           {view === 'settings' && <SettingsView />}
           {view === 'snippets' && <SnippetsView />}
+          {view === 'scripts' && <ScriptCommandsView />}
         </div>
       </div>
     )
