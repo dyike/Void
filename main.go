@@ -72,6 +72,8 @@ func main() {
 		Mac: application.MacOptions{
 			// Keep the app alive in the menu bar even when the window is closed
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
+			// Hide Dock icon (run as an accessory app like Raycast)
+			ActivationPolicy: application.ActivationPolicyAccessory,
 		},
 	})
 
@@ -106,6 +108,11 @@ func main() {
 	// Hide window on close instead of destroying it
 	mainWindow.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		e.Cancel()
+		mainWindow.Hide()
+	})
+
+	// Auto-hide when the window loses focus (like Raycast)
+	mainWindow.OnWindowEvent(events.Common.WindowLostFocus, func(e *application.WindowEvent) {
 		mainWindow.Hide()
 	})
 

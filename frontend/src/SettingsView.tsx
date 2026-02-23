@@ -62,7 +62,7 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
 
         let key = e.key.toLowerCase()
         // Normalize
-        if (key === ' ') key = 'space'
+        if (key === ' ' || key === '\u00a0' || key === ' ') key = 'space'
         else if (key === 'enter') key = 'return'
         else if (key === 'backspace') key = 'delete'
 

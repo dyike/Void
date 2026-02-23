@@ -200,6 +200,11 @@ func ParseHotkey(spec string) (*KeySpec, error) {
 		}
 	}
 
+	// Normalize non-breaking spaces (Option+Space on Mac types \u00a0)
+	if key == "\u00a0" || key == " " {
+		key = "space"
+	}
+
 	if key == "" {
 		return nil, fmt.Errorf("no key specified")
 	}
