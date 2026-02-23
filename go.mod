@@ -2,7 +2,10 @@ module github.com/dyike/Void
 
 go 1.25
 
-require github.com/wailsapp/wails/v3 v3.0.0-alpha.58
+require (
+	github.com/crosszan/modu v0.0.0-20260222081036-26bfbc1e6954
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.58
+)
 
 require (
 	dario.cat/mergo v1.0.1 // indirect
@@ -33,13 +36,16 @@ require (
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
+	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
-	golang.org/x/sys v0.33.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/crypto v0.47.0 // indirect
+	golang.org/x/net v0.49.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
+
+replace github.com/crosszan/modu => /Users/ityike/Code/go/src/github.com/crosszan/modu

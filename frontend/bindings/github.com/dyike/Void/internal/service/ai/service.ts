@@ -15,7 +15,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
- * Ask sends a prompt and returns the complete response.
+ * Ask sends a prompt using the modu Agent and returns the full response.
  */
 export function Ask(prompt: string): $CancellablePromise<$models.AskResult | null> {
     return $Call.ByID(3870779814, prompt).then(($result: any) => {
@@ -24,9 +24,9 @@ export function Ask(prompt: string): $CancellablePromise<$models.AskResult | nul
 }
 
 /**
- * AskWithHistory sends a conversation and returns the complete response.
+ * AskWithHistory uses only the last user message (modu manages history internally).
  */
-export function AskWithHistory(messages: $models.ChatMessage[]): $CancellablePromise<$models.AskResult | null> {
+export function AskWithHistory(messages: { [_: string]: any }[]): $CancellablePromise<$models.AskResult | null> {
     return $Call.ByID(825515042, messages).then(($result: any) => {
         return $$createType1($result);
     });

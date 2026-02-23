@@ -7,6 +7,5 @@ export {
 };
 
 export {
-    AskResult,
-    ChatMessage
+    AskResult
 } from "./models.js";

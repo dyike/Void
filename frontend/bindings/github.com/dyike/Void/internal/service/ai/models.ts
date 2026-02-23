@@ -29,34 +29,3 @@ export class AskResult {
         return new AskResult($$parsedSource as Partial<AskResult>);
     }
 }
-
-/**
- * ChatMessage is a single turn in the conversation.
- */
-export class ChatMessage {
-    /**
-     * "user" | "assistant" | "system"
-     */
-    "role": string;
-    "content": string;
-
-    /** Creates a new ChatMessage instance. */
-    constructor($$source: Partial<ChatMessage> = {}) {
-        if (!("role" in $$source)) {
-            this["role"] = "";
-        }
-        if (!("content" in $$source)) {
-            this["content"] = "";
-        }
-
-        Object.assign(this, $$source);
-    }
-
-    /**
-     * Creates a new ChatMessage instance from a string or object.
-     */
-    static createFrom($$source: any = {}): ChatMessage {
-        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
-        return new ChatMessage($$parsedSource as Partial<ChatMessage>);
-    }
-}
