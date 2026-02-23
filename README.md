@@ -1,59 +1,91 @@
-# Welcome to Your New Wails3 Project!
+<div align="center">
+  <h1>🌌 Void Launcher</h1>
+  <p>A fast, extensible, open-source Raycast alternative built with Go and React.</p>
 
-Congratulations on generating your Wails3 application! This README will guide you through the next steps to get your project up and running.
+  <img src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white" alt="macOS" />
+  <img src="https://img.shields.io/badge/Go-00ADD8?style=for-the-badge&logo=go&logoColor=white" alt="Go" />
+  <img src="https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" alt="React" />
+  <img src="https://img.shields.io/badge/Wails_3-E00000?style=for-the-badge&logo=wails&logoColor=white" alt="Wails" />
+</div>
 
-## Getting Started
+<br/>
 
-1. Navigate to your project directory in the terminal.
+Void is a desktop productivity tool for macOS that gives you quick access to your apps, system commands, AI models, clipboard history, scripts, and snippets. It runs as a menu-bar accessory (no Dock icon) and can be summoned instantly via a customizable global hotkey.
 
-2. To run your application in development mode, use the following command:
+## ✨ Features
 
+- **🚀 App Launcher:** Instantly search and launch any macOS application.
+- **⌘  Global Hotkey:** Summon Void from anywhere (defaults to `⌥ + Space`). Fully customizable with auto-detection of modifier keys.
+- **📋 Clipboard History:** Auto-records copied text, images, files, and links. Search, preview, and paste past items instantly.
+- **🤖 AI Chat:** Built-in AI assistant. Bring your own API key. Supports OpenAI, Anthropic, Ollama (local), and OpenAI-compatible endpoints.
+- **💻 Script Commands:** Run custom bash, python, or Node scripts directly from the launcher. Fully compatible with Raycast's `@raycast.xxx` metadata format.
+- **✂️ Snippets:** Create, search, and copy your most used text snippets.
+- **🧮 Smart Calculator:** Evaluate complex math expressions, do unit conversions (length, weight, data, time, speed), and temperature conversions straight from the search bar.
+- **⚙️ System Commands:** Quickly lock screen, sleep, restart, empty trash, or toggle system settings.
+
+## 🛠 Tech Stack
+
+- **Backend:** [Go](https://go.dev/)
+- **Desktop Framework:** [Wails 3 (Alpha)](https://wails.io/docs/next/gettingstarted/installation) - Provides native OS integration with a lightweight webview instead of bundled Chromium.
+- **Frontend:** [React](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), and [Vite](https://vitejs.dev/).
+- **Styling:** Vanilla CSS + Lucide Icons.
+
+## 📦 Installation & Build
+
+### Prerequisites
+1. Install [Go (1.21+)](https://go.dev/dl/).
+2. Install [Node.js & npm](https://nodejs.org/).
+3. Install the **Wails v3 CLI**:
+   ```bash
+   go install github.com/wailsapp/wails/v3/cmd/wails3@latest
    ```
+
+### Running Locally
+1. Clone the repository:
+   ```bash
+   git clone git@github.com:dyike/Void.git
+   cd Void
+   ```
+2. Start the dev server (compiles Go, runs Vite, and boots the app):
+   ```bash
    wails3 dev
    ```
+   *Note: On first run, macOS will ask for Accessibility permissions so Void can register the global hotkey.*
 
-   This will start your application and enable hot-reloading for both frontend and backend changes.
+### Building for Production
+To build a standardized macOS `.app` bundle:
+```bash
+wails3 build
+```
+The compiled binary will be placed in the `build/bin/` directory.
 
-3. To build your application for production, use:
+## 📂 Project Structure
 
-   ```
-   wails3 build
-   ```
+```text
+Void/
+├── main.go                # Application entry point & window configuration
+├── internal/
+│   └── service/           # Go backend business logic
+│       ├── ai/            # LLM API integrations
+│       ├── calculator/    # Math & Unit conversions
+│       ├── clipboard/     # macOS clipboard observer
+│       ├── commands/      # App discovery & system actions
+│       ├── frecency/      # Smart sorting algorithm 
+│       ├── hotkey/        # CGo global EventTap hook
+│       ├── scripts/       # Raycast-compatible script runner
+│       ├── settings/      # JSON settings persistence
+│       └── snippets/      # Text snippet manager
+├── frontend/
+│   ├── index.html         # Frontend entry
+│   ├── src/               # React UI views & components
+│   └── bindings/          # Auto-generated Wails IPC bindings
+└── build/                 # App icons and build assets
+```
 
-   This will create a production-ready executable in the `build` directory.
+## 🤝 Contributing
 
-## Exploring Wails3 Features
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-Now that you have your project set up, it's time to explore the features that Wails3 offers:
+## 📄 License
 
-1. **Check out the examples**: The best way to learn is by example. Visit the `examples` directory in the `v3/examples` directory to see various sample applications.
-
-2. **Run an example**: To run any of the examples, navigate to the example's directory and use:
-
-   ```
-   go run .
-   ```
-
-   Note: Some examples may be under development during the alpha phase.
-
-3. **Explore the documentation**: Visit the [Wails3 documentation](https://v3.wails.io/) for in-depth guides and API references.
-
-4. **Join the community**: Have questions or want to share your progress? Join the [Wails Discord](https://discord.gg/JDdSxwjhGf) or visit the [Wails discussions on GitHub](https://github.com/wailsapp/wails/discussions).
-
-## Project Structure
-
-Take a moment to familiarize yourself with your project structure:
-
-- `frontend/`: Contains your frontend code (HTML, CSS, JavaScript/TypeScript)
-- `main.go`: The entry point of your Go backend
-- `app.go`: Define your application structure and methods here
-- `wails.json`: Configuration file for your Wails project
-
-## Next Steps
-
-1. Modify the frontend in the `frontend/` directory to create your desired UI.
-2. Add backend functionality in `main.go`.
-3. Use `wails3 dev` to see your changes in real-time.
-4. When ready, build your application with `wails3 build`.
-
-Happy coding with Wails3! If you encounter any issues or have questions, don't hesitate to consult the documentation or reach out to the Wails community.
+MIT
