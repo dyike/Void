@@ -163,7 +163,6 @@ const App: React.FC = () => {
   const launchCmd = useCallback(async (cmd: CommandInfo) => {
     if (cmd.id === 'system-clipboard-manager') { setView('clipboard'); return }
     if (cmd.id === 'system-ai-chat') { setView('ai'); return }
-    if (cmd.id === 'system-settings') { setView('settings'); return }
     if (cmd.id === 'system-snippets') { setView('snippets'); return }
     if (cmd.id === 'system-scripts') { setView('scripts'); return }
 
@@ -242,7 +241,7 @@ const App: React.FC = () => {
   // ─── Sub-views ─────────────────────────────────────────────────────────
   if (view !== 'launcher') {
     const onBack = () => { setView('launcher'); setQuery('') }
-    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', settings: 'Void Settings', snippets: 'Snippets', scripts: 'Script Commands' }[view]
+    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', snippets: 'Snippets', scripts: 'Script Commands' }[view]
     return (
       <div className="launcher" onKeyDown={handleKeyDown}>
         <div className="search-bar">

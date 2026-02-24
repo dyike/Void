@@ -112,6 +112,15 @@ const SettingsView: React.FC = () => {
             .catch(console.error)
     }, [])
 
+    useEffect(() => {
+        // Adjust window size for About tab vs other tabs (only adjust height)
+        if (activeTab === 'about') {
+            SettingsService.ResizeSettingsWindow(780, 320).catch(console.error)
+        } else {
+            SettingsService.ResizeSettingsWindow(780, 520).catch(console.error)
+        }
+    }, [activeTab])
+
     const update = <K extends keyof AppSettings>(key: K, value: any) => {
         setSettings(prev => prev ? { ...prev, [key]: value } as AppSettings : prev)
     }
@@ -308,14 +317,16 @@ html, body, #root { margin:0; padding:0; height:100%; }
     display: flex;
     flex-direction: column;
     height: 100vh;
-    background: #282828; /* Less black, more dark gray */
-    color: #e0e0e0;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+    background: rgba(14, 14, 18, 0.88);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
+    color: rgba(255, 255, 255, 0.9);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     user-select: none;
 }
 
-.rc-loading { display:flex; align-items:center; justify-content:center; height:100vh; color:#999; font-size:14px; }
+.rc-loading { display:flex; align-items:center; justify-content:center; height:100vh; color:rgba(255,255,255,0.4); font-size:14px; }
 
 /* ── Toolbar & Tab Bar ── */
 .rc-toolbar-title {
@@ -327,7 +338,7 @@ html, body, #root { margin:0; padding:0; height:100%; }
     justify-content: center;
     font-size: 13px;
     font-weight: 600;
-    color: #b0b0b0;
+    color: rgba(255, 255, 255, 0.5);
     -webkit-app-region: drag;
     pointer-events: none;
 }
@@ -337,7 +348,7 @@ html, body, #root { margin:0; padding:0; height:100%; }
     justify-content: center;
     gap: 16px;
     padding: 38px 24px 0;
-    border-bottom: 1px solid #3e3e3e;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     -webkit-app-region: drag;
 }
 
@@ -351,13 +362,13 @@ html, body, #root { margin:0; padding:0; height:100%; }
     border: none;
     background: transparent;
     cursor: pointer;
-    color: #a0a0a0;
+    color: rgba(255, 255, 255, 0.35);
     border-radius: 8px 8px 0 0;
     transition: all 0.1s ease;
     -webkit-app-region: no-drag;
 }
-.rc-tab:hover { background: #383838; color: #e0e0e0; }
-.rc-tab.active { background: #383838; color: #ffffff; }
+.rc-tab:hover { background: rgba(255,255,255,0.05); color: rgba(255, 255, 255, 0.7); }
+.rc-tab.active { background: rgba(255,255,255,0.09); color: rgba(255, 255, 255, 0.95); }
 
 .rc-tab-icon {
     display: flex;
@@ -369,7 +380,7 @@ html, body, #root { margin:0; padding:0; height:100%; }
 .rc-tab-label {
     font-size: 12px;
     font-weight: 600;
-    letter-spacing: 0.2px;
+    letter-spacing: 0.04em;
 }
 
 /* ── Content ── */
@@ -377,7 +388,7 @@ html, body, #root { margin:0; padding:0; height:100%; }
     flex: 1;
     overflow: hidden;
     position: relative;
-    background: #282828;
+    /* let root background show through */
 }
 .rc-scroll-view {
     position: absolute;
@@ -391,7 +402,7 @@ html, body, #root { margin:0; padding:0; height:100%; }
 }
 .rc-divider {
     height: 1px;
-    background: #3e3e3e;
+    background: rgba(255, 255, 255, 0.08);
     margin: 32px auto;
     width: calc(100% - 64px);
     max-width: 536px;
@@ -408,8 +419,9 @@ html, body, #root { margin:0; padding:0; height:100%; }
 .rc-row-label {
     text-align: right;
     font-size: 13px;
-    font-weight: 600;
-    color: #a0a0a0;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 0.02em;
 }
 .rc-row-control {
     display: flex;
@@ -424,64 +436,69 @@ html, body, #root { margin:0; padding:0; height:100%; }
     align-items: center;
     gap: 8px;
     font-size: 13px;
-    color: #e0e0e0;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.85);
     cursor: pointer;
 }
 .rc-checkbox input[type="checkbox"] {
     margin: 0;
     width: 14px;
     height: 14px;
-    accent-color: #ffffff;
+    accent-color: #6366f1; /* Indigo brand accent */
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 4px;
+    background: rgba(255,255,255,0.05);
 }
 
 .rc-hotkey-btn {
-    background: #383838;
-    border: 1px solid #484848;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
     padding: 8px 24px;
-    color: #e0e0e0;
+    color: rgba(255, 255, 255, 0.9);
     font-size: 15px;
-    font-weight: 600;
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+    font-weight: 500;
+    font-family: inherit;
     cursor: pointer;
     min-width: 280px;
     text-align: center;
-    transition: all 0.1s;
+    transition: all 0.15s;
+    letter-spacing: 0.02em;
 }
-.rc-hotkey-btn:hover { background: #484848; border-color: #5a5a5a; }
+.rc-hotkey-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.15); }
 .rc-hotkey-btn.recording {
-    background: #23355c;
-    border-color: #3b82f6;
-    color: #93c5fd;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: rgba(180, 183, 255, 0.95);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
 }
 
 .rc-segmented-control {
     display: inline-flex;
-    background: #383838;
-    padding: 3px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 4px;
     border-radius: 8px;
-    border: 1px solid #484848;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 .rc-segment {
     background: transparent;
     border: none;
     border-radius: 6px;
     padding: 4px 12px;
-    color: #b0b0b0;
+    color: rgba(255, 255, 255, 0.4);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.1s;
+    transition: all 0.15s;
     min-width: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
-.rc-segment:hover { color: #ffffff; }
+.rc-segment:hover { color: rgba(255, 255, 255, 0.8); }
 .rc-segment.active {
-    background: #5a5a5a;
-    color: #ffffff;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    background: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
 }
 
 /* ── Appearance Group ── */
@@ -498,12 +515,12 @@ html, body, #root { margin:0; padding:0; height:100%; }
     align-items: center;
     gap: 8px;
     cursor: pointer;
-    color: #b0b0b0;
+    color: rgba(255, 255, 255, 0.45);
     font-size: 12px;
     font-weight: 500;
 }
-.rc-appearance-btn:hover { color: #ffffff; }
-.rc-appearance-btn.active { color: #ffffff; font-weight: 600; }
+.rc-appearance-btn:hover { color: rgba(255, 255, 255, 0.85); }
+.rc-appearance-btn.active { color: rgba(255, 255, 255, 0.95); font-weight: 600; }
 .rc-appearance-icon {
     width: 36px;
     height: 36px;
@@ -511,65 +528,75 @@ html, body, #root { margin:0; padding:0; height:100%; }
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #a0a0a0;
-    border: 1px solid #5a5a5a;
-    background: #383838;
-    transition: all 0.1s;
+    color: rgba(255, 255, 255, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    transition: all 0.15s;
 }
-.rc-appearance-btn:hover .rc-appearance-icon { border-color: #7a7a7a; }
+.rc-appearance-btn:hover .rc-appearance-icon { border-color: rgba(255, 255, 255, 0.3); }
 .rc-appearance-btn.active .rc-appearance-icon {
-    background: #484848;
-    border-color: #ffffff;
+    background: rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.5);
     border-width: 2px;
-    color: #ffffff;
+    color: rgba(180, 183, 255, 0.95);
 }
 
 /* ── Inputs ── */
 .rc-input, .rc-select {
-    background: #282828;
-    border: 1px solid #484848;
-    border-radius: 6px;
-    padding: 6px 12px;
-    color: #e0e0e0;
-    font-size: 13px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
     font-family: inherit;
+    font-weight: 500;
     width: 280px;
     outline: none;
-    transition: all 0.1s;
+    transition: all 0.15s;
     box-sizing: border-box;
 }
 .rc-input:focus, .rc-select:focus {
-    border-color: #3b82f6;
-    background: #333333;
-    box-shadow: 0 0 0 3px rgba(59,130,246,0.25);
+    border-color: #6366f1;
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
 }
-.rc-input::placeholder { color: #808080; }
+.rc-input::placeholder { color: rgba(255, 255, 255, 0.3); }
 
-.rc-empty { text-align: center; padding: 64px 0; color: #808080; font-size: 14px; }
+.rc-select > option { background: #1a1a1e; color: #fff; }
+
+.rc-empty { text-align: center; padding: 64px 0; color: rgba(255, 255, 255, 0.3); font-size: 14px; }
 
 /* ── Footer ── */
 .rc-footer {
     padding: 16px 32px;
-    border-top: 1px solid #3e3e3e;
-    background: #2f2f2f;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    background: rgba(255, 255, 255, 0.015);
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 16px;
 }
 .rc-save-btn {
-    background: #e0e0e0;
+    background: rgba(99, 102, 241, 0.25);
     border: none;
     border-radius: 6px;
     padding: 6px 16px;
-    color: #1c1c1e;
+    color: rgba(180, 183, 255, 0.92);
     font-size: 13px;
-    font-weight: 600;
+    font-family: inherit;
+    font-weight: 500;
     cursor: pointer;
+    transition: background 0.15s;
 }
-.rc-save-btn:hover { background: #ffffff; }
-.rc-save-btn:disabled { opacity: 0.5; }
-.rc-footer-hint { font-size: 12px; color: #a0a0a0; }
+.rc-save-btn:hover { background: rgba(99, 102, 241, 0.4); }
+.rc-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.rc-footer-hint { font-size: 12px; color: rgba(255, 255, 255, 0.35); }
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
 `
 
 export default SettingsView

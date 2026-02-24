@@ -260,10 +260,6 @@ func systemCommands() []CommandInfo {
 			ID: "system-snippets", Title: "Snippets",
 			Subtitle: "Manage text snippets", IconEmoji: "📝", Category: "system",
 		},
-		{
-			ID: "system-settings", Title: "Void Settings",
-			Subtitle: "Configure Void", IconEmoji: "⚙️", Category: "system",
-		},
 		// ── macOS system actions ───────────────────
 		{
 			ID: "system-lock-screen", Title: "Lock Screen",

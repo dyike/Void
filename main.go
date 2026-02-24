@@ -112,7 +112,8 @@ func main() {
 			Frameless:        false,
 			AlwaysOnTop:      false,
 			Hidden:           false,
-			BackgroundColour: application.NewRGBA(40, 40, 40, 255),
+			BackgroundType:   application.BackgroundTypeTransparent,
+			BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 			URL:              "/#/settings",
 			Mac: application.MacWindow{
 				Backdrop: application.MacBackdropTranslucent,
@@ -131,6 +132,21 @@ func main() {
 
 	// Expose OpenSettingsWindow to frontend via settings service
 	settingsSvc.SetOpenSettingsFunc(openSettingsWindow)
+
+	// Expose ResizeSettingsWindow to frontend
+	settingsSvc.SetResizeSettingsFunc(func(width, height int) {
+		if settingsWindow != nil {
+			// Get current position & size
+			cx, cy := settingsWindow.Position()
+
+			settingsWindow.SetSize(width, height)
+
+			// Wails v3 coordinate system is top-left originating.
+			// Re-applying the original cx, cy immediately after SetSize
+			// ensures the top-left corner stays rigidly pinned to the screen.
+			settingsWindow.SetPosition(cx, cy)
+		}
+	})
 
 	// toggleWindow shows/hides the main launcher window.
 	toggleWindow := func() {

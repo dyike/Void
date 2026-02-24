@@ -45,6 +45,13 @@ export function ResetCache(): $CancellablePromise<void> {
 }
 
 /**
+ * ResizeSettingsWindow resizes the settings window.
+ */
+export function ResizeSettingsWindow(width: number, height: number): $CancellablePromise<void> {
+    return $Call.ByID(1386083609, width, height);
+}
+
+/**
  * SaveSettings merges a patch into the current settings and persists.
  */
 export function SaveSettings(updated: $models.AppSettings): $CancellablePromise<$models.AppSettings | null> {
@@ -65,6 +72,13 @@ export function SetGlobalHotkey(spec: string): $CancellablePromise<void> {
  */
 export function SetOpenSettingsFunc(fn: any): $CancellablePromise<void> {
     return $Call.ByID(178502227, fn);
+}
+
+/**
+ * SetResizeSettingsFunc sets the callback to resize the settings window.
+ */
+export function SetResizeSettingsFunc(fn: any): $CancellablePromise<void> {
+    return $Call.ByID(2697953339, fn);
 }
 
 // Private type creation functions

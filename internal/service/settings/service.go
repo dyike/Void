@@ -53,10 +53,11 @@ var defaultSettings = AppSettings{
 
 // Service manages app settings.
 type Service struct {
-	mu               sync.RWMutex
-	cache            *AppSettings
-	path             string
-	openSettingsFunc func()
+	mu                 sync.RWMutex
+	cache              *AppSettings
+	path               string
+	openSettingsFunc   func()
+	resizeSettingsFunc func(width, height int)
 }
 
 // SetOpenSettingsFunc sets the callback to open the settings window.
@@ -64,10 +65,22 @@ func (s *Service) SetOpenSettingsFunc(fn func()) {
 	s.openSettingsFunc = fn
 }
 
+// SetResizeSettingsFunc sets the callback to resize the settings window.
+func (s *Service) SetResizeSettingsFunc(fn func(width, height int)) {
+	s.resizeSettingsFunc = fn
+}
+
 // OpenSettingsWindow opens the settings window.
 func (s *Service) OpenSettingsWindow() {
 	if s.openSettingsFunc != nil {
 		s.openSettingsFunc()
+	}
+}
+
+// ResizeSettingsWindow resizes the settings window.
+func (s *Service) ResizeSettingsWindow(width, height int) {
+	if s.resizeSettingsFunc != nil {
+		s.resizeSettingsFunc(width, height)
 	}
 }
 
