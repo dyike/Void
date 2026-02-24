@@ -8,5 +8,6 @@ export {
 
 export {
     AISettings,
-    AppSettings
+    AppSettings,
+    Skill
 } from "./models.js";

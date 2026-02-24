@@ -80,6 +80,7 @@ export class AppSettings {
     "fontSize": string;
     "baseColor": string;
     "terminalApp": string;
+    "skillsPath": string;
     "ai": AISettings;
 
     /** Creates a new AppSettings instance. */
@@ -108,6 +109,9 @@ export class AppSettings {
         if (!("terminalApp" in $$source)) {
             this["terminalApp"] = "";
         }
+        if (!("skillsPath" in $$source)) {
+            this["skillsPath"] = "";
+        }
         if (!("ai" in $$source)) {
             this["ai"] = (new AISettings());
         }
@@ -123,7 +127,7 @@ export class AppSettings {
         const $$createField2_0 = $$createType0;
         const $$createField3_0 = $$createType0;
         const $$createField4_0 = $$createType1;
-        const $$createField8_0 = $$createType2;
+        const $$createField9_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pinnedCommands" in $$parsedSource) {
             $$parsedSource["pinnedCommands"] = $$createField1_0($$parsedSource["pinnedCommands"]);
@@ -138,9 +142,41 @@ export class AppSettings {
             $$parsedSource["commandHotkeys"] = $$createField4_0($$parsedSource["commandHotkeys"]);
         }
         if ("ai" in $$parsedSource) {
-            $$parsedSource["ai"] = $$createField8_0($$parsedSource["ai"]);
+            $$parsedSource["ai"] = $$createField9_0($$parsedSource["ai"]);
         }
         return new AppSettings($$parsedSource as Partial<AppSettings>);
+    }
+}
+
+/**
+ * Skill represents a found skill directory
+ */
+export class Skill {
+    "name": string;
+    "path": string;
+    "description": string;
+
+    /** Creates a new Skill instance. */
+    constructor($$source: Partial<Skill> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("path" in $$source)) {
+            this["path"] = "";
+        }
+        if (!("description" in $$source)) {
+            this["description"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new Skill instance from a string or object.
+     */
+    static createFrom($$source: any = {}): Skill {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new Skill($$parsedSource as Partial<Skill>);
     }
 }
 

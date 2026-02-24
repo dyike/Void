@@ -31,6 +31,15 @@ export function GetSettings(): $CancellablePromise<$models.AppSettings | null> {
 }
 
 /**
+ * GetSkills scans the configured SkillsPath for directories and returns them.
+ */
+export function GetSkills(): $CancellablePromise<$models.Skill[]> {
+    return $Call.ByID(3904205762).then(($result: any) => {
+        return $$createType3($result);
+    });
+}
+
+/**
  * OpenSettingsWindow opens the settings window.
  */
 export function OpenSettingsWindow(): $CancellablePromise<void> {
@@ -84,3 +93,5 @@ export function SetResizeSettingsFunc(fn: any): $CancellablePromise<void> {
 // Private type creation functions
 const $$createType0 = $models.AppSettings.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
+const $$createType2 = $models.Skill.createFrom;
+const $$createType3 = $Create.Array($$createType2);

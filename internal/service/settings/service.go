@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 )
 
@@ -31,6 +32,7 @@ type AppSettings struct {
 	FontSize         string            `json:"fontSize"` // "small" | "medium" | "large"
 	BaseColor        string            `json:"baseColor"`
 	TerminalApp      string            `json:"terminalApp"`
+	SkillsPath       string            `json:"skillsPath"`
 	AI               AISettings        `json:"ai"`
 }
 
@@ -50,6 +52,7 @@ var defaultSettings = AppSettings{
 	FontSize:         "medium",
 	BaseColor:        "#101113",
 	TerminalApp:      "Terminal",
+	SkillsPath:       "",
 	AI:               defaultAI,
 }
 
@@ -232,4 +235,69 @@ func (s *Service) load() *AppSettings {
 		parsed.AI.DefaultModel = defaultAI.DefaultModel
 	}
 	return &parsed
+}
+
+// Skill represents a found skill directory
+type Skill struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Description string `json:"description"`
+}
+
+// GetSkills scans the configured SkillsPath for directories and returns them.
+func (s *Service) GetSkills() ([]Skill, error) {
+	st, err := s.GetSettings()
+	if err != nil {
+		return nil, err
+	}
+	if st.SkillsPath == "" {
+		return []Skill{}, nil
+	}
+
+	// Expand ~ to home directory if present
+	skillsPath := st.SkillsPath
+	if strings.HasPrefix(skillsPath, "~/") {
+		home, err := os.UserHomeDir()
+		if err == nil {
+			skillsPath = filepath.Join(home, skillsPath[2:])
+		}
+	}
+
+	entries, err := os.ReadDir(skillsPath)
+	if err != nil {
+		return []Skill{}, nil // return empty if directory doesn't exist or is invalid
+	}
+
+	var skills []Skill
+	for _, entry := range entries {
+		if entry.IsDir() {
+			// skip hidden directories
+			if strings.HasPrefix(entry.Name(), ".") {
+				continue
+			}
+
+			skillPath := filepath.Join(skillsPath, entry.Name())
+			desc := ""
+
+			// Try to read SKILL.md for description
+			mdPath := filepath.Join(skillPath, "SKILL.md")
+			mdData, err := os.ReadFile(mdPath)
+			if err == nil {
+				lines := strings.Split(string(mdData), "\n")
+				for _, line := range lines {
+					if strings.HasPrefix(line, "description:") {
+						desc = strings.TrimSpace(strings.TrimPrefix(line, "description:"))
+						break
+					}
+				}
+			}
+
+			skills = append(skills, Skill{
+				Name:        entry.Name(),
+				Path:        skillPath,
+				Description: desc,
+			})
+		}
+	}
+	return skills, nil
 }

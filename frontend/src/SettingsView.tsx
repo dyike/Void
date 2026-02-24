@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
-import { AppSettings } from '../bindings/github.com/dyike/Void/internal/service/settings/models.js'
+import { AppSettings, Skill } from '../bindings/github.com/dyike/Void/internal/service/settings/models.js'
 
 // ─── Icons ─────────────────────────────────────────────────────────────────
 
 const Icons = {
     general: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>,
     extensions: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="7" width="10" height="10" rx="2" ry="2" /><path d="M7 12H3M21 12h-4M12 7V3M12 21v-4M8.5 7v10M15.5 7v10M7 8.5h10M7 15.5h10" /></svg>,
+    skills: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>,
     ai: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4M3 5h4" /></svg>,
     advanced: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
     about: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
@@ -87,11 +88,12 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
 
 // ─── Tabs ─────────────────────────────────────────────────────────────────
 
-type Tab = 'general' | 'extensions' | 'ai' | 'advanced' | 'about'
+type Tab = 'general' | 'extensions' | 'skills' | 'ai' | 'advanced' | 'about'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
     { id: 'general', label: 'General', icon: Icons.general },
     { id: 'extensions', label: 'Extensions', icon: Icons.extensions },
+    { id: 'skills', label: 'Skills', icon: Icons.skills },
     { id: 'ai', label: 'AI', icon: Icons.ai },
     { id: 'advanced', label: 'Advanced', icon: Icons.advanced },
     { id: 'about', label: 'About', icon: Icons.about },
@@ -106,11 +108,21 @@ const SettingsView: React.FC = () => {
     const [hotkeyStatus, setHotkeyStatus] = useState<'idle' | 'saved' | 'error'>('idle')
     const [activeTab, setActiveTab] = useState<Tab>('general')
 
+    const [skillsList, setSkillsList] = useState<Skill[]>([])
+
     useEffect(() => {
         SettingsService.GetSettings()
             .then(s => setSettings(s as AppSettings))
             .catch(console.error)
     }, [])
+
+    useEffect(() => {
+        if (activeTab === 'skills') {
+            SettingsService.GetSkills()
+                .then(s => setSkillsList(s || []))
+                .catch(console.error)
+        }
+    }, [activeTab, settings?.skillsPath])
 
     useEffect(() => {
         // Adjust window size for About tab vs other tabs (only adjust height)
@@ -249,6 +261,72 @@ const SettingsView: React.FC = () => {
                                         </div>
                                         <span>System</span>
                                     </button>
+                                </div>
+                            </Row>
+                        </div>
+                    )}
+
+                    {activeTab === 'skills' && (
+                        <div className="rc-section">
+                            <Row label="Skills Path">
+                                <input
+                                    className="rc-input"
+                                    type="text"
+                                    placeholder="e.g. ~/my-skills"
+                                    value={settings.skillsPath || ''}
+                                    onChange={e => update('skillsPath', e.target.value)}
+                                />
+                            </Row>
+                            <div className="rc-divider" />
+                            <Row label="Discovered Skills" style={{ alignItems: 'flex-start' }}>
+                                <div style={{
+                                    display: 'grid',
+                                    gridTemplateColumns: 'repeat(2, 1fr)',
+                                    gap: '12px',
+                                    width: '100%'
+                                }}>
+                                    {skillsList.length === 0 ? (
+                                        <div style={{ color: '#888', fontSize: '13px', gridColumn: '1 / -1' }}>
+                                            No skills found in this directory. Add a valid path above. <br />
+                                            (Tip: Clone https://github.com/dyike/eino-skills)
+                                        </div>
+                                    ) : (
+                                        skillsList.map((skill, idx) => (
+                                            <div
+                                                key={idx}
+                                                title={skill.description || 'No description available in SKILL.md'}
+                                                style={{
+                                                    display: 'flex',
+                                                    flexDirection: 'column',
+                                                    justifyContent: 'flex-start',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    padding: '12px',
+                                                    borderRadius: '8px',
+                                                    border: '1px solid rgba(255,255,255,0.1)',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s ease',
+                                                }}
+                                                onMouseEnter={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                                                    e.currentTarget.style.transform = 'translateY(-2px)'
+                                                }}
+                                                onMouseLeave={(e) => {
+                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
+                                                    e.currentTarget.style.transform = 'translateY(0)'
+                                                }}
+                                            >
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                                                    {Icons.skills}
+                                                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                        {skill.name}
+                                                    </span>
+                                                </div>
+                                                <span style={{ fontSize: '12px', color: '#999', wordBreak: 'break-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                                                    {skill.description || skill.path}
+                                                </span>
+                                            </div>
+                                        ))
+                                    )}
                                 </div>
                             </Row>
                         </div>
