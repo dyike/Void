@@ -1,20 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
 import { AppSettings, Skill } from '../bindings/github.com/dyike/Void/internal/service/settings/models.js'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Button } from "@/components/ui/button"
+import { Settings, Puzzle, Cpu, Wrench, Info, FolderGit2, Sun, Moon, Monitor } from 'lucide-react'
 
-// ─── Icons ─────────────────────────────────────────────────────────────────
-
-const Icons = {
-    general: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" /></svg>,
-    extensions: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="7" y="7" width="10" height="10" rx="2" ry="2" /><path d="M7 12H3M21 12h-4M12 7V3M12 21v-4M8.5 7v10M15.5 7v10M7 8.5h10M7 15.5h10" /></svg>,
-    skills: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z" /><path d="M2 17l10 5 10-5" /><path d="M2 12l10 5 10-5" /></svg>,
-    ai: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" /><path d="M5 3v4M3 5h4" /></svg>,
-    advanced: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" /></svg>,
-    about: <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" /></svg>,
-}
-
-// ─── Hotkey Recorder ─────────────────────────────────────────────────────
-
+// Hotkey Recorder
 interface HotkeyRecorderProps {
     value: string
     onChange: (spec: string, display: string) => void
@@ -75,7 +69,10 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
     return (
         <button
             ref={ref}
-            className={`rc-hotkey-btn${recording ? ' recording' : ''}`}
+            className={`px-6 py-2 rounded-lg border flex-1 text-sm font-medium transition-all min-w-[280px]
+                ${recording
+                    ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 ring-2 ring-indigo-500/20 shadow-none'
+                    : 'bg-white/5 border-white/10 text-white/90 hover:bg-white/10'}`}
             onClick={() => { if (recording) { setRecording(false); setPending('') } else { setRecording(true); setPending('Record shortcut…'); ref.current?.focus() } }}
             onKeyDown={handleKeyDown}
             onBlur={() => { setRecording(false); setPending('') }}
@@ -86,27 +83,25 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
     )
 }
 
-// ─── Tabs ─────────────────────────────────────────────────────────────────
-
-type Tab = 'general' | 'extensions' | 'skills' | 'ai' | 'advanced' | 'about'
-
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-    { id: 'general', label: 'General', icon: Icons.general },
-    { id: 'extensions', label: 'Extensions', icon: Icons.extensions },
-    { id: 'skills', label: 'Skills', icon: Icons.skills },
-    { id: 'ai', label: 'AI', icon: Icons.ai },
-    { id: 'advanced', label: 'Advanced', icon: Icons.advanced },
-    { id: 'about', label: 'About', icon: Icons.about },
-]
-
-// ─── Settings View ────────────────────────────────────────────────────────
+function Row({ label, children, alignTop = false }: { label: string; children?: React.ReactNode, alignTop?: boolean }) {
+    return (
+        <div className={`grid grid-cols-[160px_1fr] gap-6 py-2.5 px-8 items-${alignTop ? 'start' : 'center'}`}>
+            <div className="text-right text-[13px] font-medium text-white/50 tracking-wide mt-1">
+                {label}
+            </div>
+            <div className="flex flex-col items-start gap-2 w-full">
+                {children}
+            </div>
+        </div>
+    )
+}
 
 const SettingsView: React.FC = () => {
     const [settings, setSettings] = useState<AppSettings | null>(null)
     const [saving, setSaving] = useState(false)
     const [saved, setSaved] = useState(false)
     const [hotkeyStatus, setHotkeyStatus] = useState<'idle' | 'saved' | 'error'>('idle')
-    const [activeTab, setActiveTab] = useState<Tab>('general')
+    const [activeTab, setActiveTab] = useState('general')
 
     const [skillsList, setSkillsList] = useState<Skill[]>([])
 
@@ -125,7 +120,6 @@ const SettingsView: React.FC = () => {
     }, [activeTab, settings?.skillsPath])
 
     useEffect(() => {
-        // Adjust window size for About tab vs other tabs (only adjust height)
         if (activeTab === 'about') {
             SettingsService.ResizeSettingsWindow(780, 320).catch(console.error)
         } else {
@@ -158,540 +152,254 @@ const SettingsView: React.FC = () => {
         } catch (e) { console.error(e) } finally { setSaving(false) }
     }
 
-    // Auto-save when settings change (debounced or on blur conceptually, but explicit save is okay for now,
-    // though Raycast auto-saves. Let's just keep the explicit button for non-hotkey fields or auto-save.)
-    // For simplicity, we'll keep the button.
-
-    if (!settings) return <div className="rc-loading">Loading…</div>
+    if (!settings) return <div className="flex items-center justify-center h-screen text-white/40 text-sm">Loading…</div>
 
     return (
-        <div className="rc-root">
-            {/* ── Header Toolbar ── */}
-            <div className="rc-toolbar-title">Void Settings</div>
-
-            <div className="rc-tabbar">
-                {TABS.map(t => (
-                    <button
-                        key={t.id}
-                        className={`rc-tab${activeTab === t.id ? ' active' : ''}`}
-                        onClick={() => setActiveTab(t.id)}
-                    >
-                        <div className="rc-tab-icon">{t.icon}</div>
-                        <div className="rc-tab-label">{t.label}</div>
-                    </button>
-                ))}
+        <div className="flex flex-col h-screen text-white/90 font-sans select-none overflow-hidden bg-[#0e0e12]/80 backdrop-blur-3xl" style={{ WebkitAppRegion: 'drag' } as any}>
+            <div className="absolute top-0 left-0 right-0 h-[38px] flex items-center justify-center text-[13px] font-semibold text-white/50 pointer-events-none">
+                Void Settings
             </div>
 
-            {/* ── Content Area ── */}
-            <div className="rc-content">
-                <div className="rc-scroll-view" style={activeTab === 'about' ? { padding: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' } : {}}>
-                    {activeTab === 'general' && (
-                        <div className="rc-section">
-                            <Row label="Startup">
-                                <label className="rc-checkbox">
-                                    <input type="checkbox" disabled />
-                                    Launch Void at login
-                                </label>
-                            </Row>
-                            <Row label="Void Hotkey">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                    <HotkeyRecorder value={settings.globalShortcut} onChange={(spec) => handleHotkeyChange(spec)} />
-                                    {hotkeyStatus === 'saved' && <span style={{ color: '#10b981', fontSize: 13 }}>✓</span>}
-                                    {hotkeyStatus === 'error' && <span style={{ color: '#ef4444', fontSize: 13 }}>✗</span>}
-                                </div>
-                            </Row>
-                            <Row label="Menu Bar Icon">
-                                <label className="rc-checkbox">
-                                    <input type="checkbox" defaultChecked disabled />
-                                    Show Void in menu bar
-                                </label>
-                            </Row>
+            <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden" defaultValue="general">
+                <div className="flex justify-center pt-[38px]">
+                    <TabsList className="bg-transparent border-b border-white/10 rounded-none h-auto p-0 gap-4 flex w-full justify-center px-6">
+                        <TabsTrigger value="general" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <Settings className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">General</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="extensions" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <Puzzle className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">Extensions</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="skills" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <FolderGit2 className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">Skills</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="ai" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <Cpu className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">AI</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="advanced" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <Wrench className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">Advanced</span>
+                        </TabsTrigger>
+                        <TabsTrigger value="about" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                            <Info className="w-[22px] h-[22px]" />
+                            <span className="text-xs font-semibold tracking-wide">About</span>
+                        </TabsTrigger>
+                    </TabsList>
+                </div>
 
-                            <div className="rc-divider" />
+                <div className="flex-1 overflow-y-auto w-full" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                    {activeTab === 'about' ? (
+                        <TabsContent value="about" className="mt-0 outline-none h-full flex items-center justify-center" style={{ minHeight: 180 }}>
+                            <div className="flex flex-col items-center gap-2">
+                                <span className="text-white/80 font-semibold tracking-wide">Void Launcher</span>
+                                <span className="text-white/40 text-sm">Version 1.0.0</span>
+                            </div>
+                        </TabsContent>
+                    ) : (
+                        <div className="max-w-[600px] mx-auto py-8">
 
-                            <Row label="Terminal App">
-                                <select
-                                    className="rc-select"
-                                    value={settings.terminalApp || 'Terminal'}
-                                    onChange={e => update('terminalApp', e.target.value)}
-                                >
-                                    <option value="Terminal">Terminal</option>
-                                    <option value="iTerm">iTerm</option>
-                                    <option value="Warp">Warp</option>
-                                    <option value="Alacritty">Alacritty</option>
-                                    <option value="WezTerm">WezTerm</option>
-                                    <option value="Ghostty">Ghostty</option>
-                                </select>
-                            </Row>
+                            <TabsContent value="general" className="mt-0 outline-none">
+                                <Row label="Startup">
+                                    <div className="flex items-center space-x-2 opacity-60">
+                                        <Checkbox id="startup" disabled checked={false} />
+                                        <label htmlFor="startup" className="text-[13px] font-medium leading-none cursor-not-allowed text-white/80">Launch Void at login</label>
+                                    </div>
+                                </Row>
 
-                            <Row label="Text Size">
-                                <div className="rc-segmented-control">
-                                    <button
-                                        className={`rc-segment ${settings.fontSize === 'small' ? 'active' : ''}`}
-                                        onClick={() => update('fontSize', 'small')}
-                                    >
-                                        <span style={{ fontSize: '13px', fontWeight: 600 }}>Aa</span>
-                                    </button>
-                                    <button
-                                        className={`rc-segment ${settings.fontSize === 'medium' ? 'active' : ''}`}
-                                        onClick={() => update('fontSize', 'medium')}
-                                    >
-                                        <span style={{ fontSize: '15px', fontWeight: 600 }}>Aa</span>
-                                    </button>
-                                </div>
-                            </Row>
+                                <Row label="Void Hotkey">
+                                    <div className="flex items-center gap-2">
+                                        <HotkeyRecorder value={settings.globalShortcut} onChange={(s) => handleHotkeyChange(s)} />
+                                        {hotkeyStatus === 'saved' && <span className="text-emerald-500 text-[13px]">✓</span>}
+                                        {hotkeyStatus === 'error' && <span className="text-red-500 text-[13px]">✗</span>}
+                                    </div>
+                                </Row>
 
-                            <Row label="Appearance">
-                                <div className="rc-appearance-group">
-                                    <button className="rc-appearance-btn">
-                                        <div className="rc-appearance-icon light">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5" /><line x1="12" y1="1" x2="12" y2="3" /><line x1="12" y1="21" x2="12" y2="23" /><line x1="4.22" y1="4.22" x2="5.64" y2="5.64" /><line x1="18.36" y1="18.36" x2="19.78" y2="19.78" /><line x1="1" y1="12" x2="3" y2="12" /><line x1="21" y1="12" x2="23" y2="12" /><line x1="4.22" y1="19.78" x2="5.64" y2="18.36" /><line x1="18.36" y1="4.22" x2="19.78" y2="5.64" /></svg>
-                                        </div>
-                                        <span>Light</span>
-                                    </button>
-                                    <button className="rc-appearance-btn">
-                                        <div className="rc-appearance-icon dark">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
-                                        </div>
-                                        <span>Dark</span>
-                                    </button>
-                                    <button className="rc-appearance-btn active">
-                                        <div className="rc-appearance-icon system">
-                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M12 2a10 10 0 0 0 0 20Z" fill="currentColor" /></svg>
-                                        </div>
-                                        <span>System</span>
-                                    </button>
-                                </div>
-                            </Row>
-                        </div>
-                    )}
+                                <Row label="Menu Bar Icon">
+                                    <div className="flex items-center space-x-2 opacity-60">
+                                        <Checkbox id="menubar" disabled checked={true} />
+                                        <label htmlFor="menubar" className="text-[13px] font-medium leading-none cursor-not-allowed text-white/80">Show Void in menu bar</label>
+                                    </div>
+                                </Row>
 
-                    {activeTab === 'skills' && (
-                        <div className="rc-section">
-                            <Row label="Skills Path">
-                                <input
-                                    className="rc-input"
-                                    type="text"
-                                    placeholder="e.g. ~/my-skills"
-                                    value={settings.skillsPath || ''}
-                                    onChange={e => update('skillsPath', e.target.value)}
-                                />
-                            </Row>
-                            <div className="rc-divider" />
-                            <Row label="Discovered Skills" style={{ alignItems: 'flex-start' }}>
-                                <div style={{
-                                    display: 'grid',
-                                    gridTemplateColumns: 'repeat(2, 1fr)',
-                                    gap: '12px',
-                                    width: '100%'
-                                }}>
-                                    {skillsList.length === 0 ? (
-                                        <div style={{ color: '#888', fontSize: '13px', gridColumn: '1 / -1' }}>
-                                            No skills found in this directory. Add a valid path above. <br />
-                                            (Tip: Clone https://github.com/dyike/eino-skills)
-                                        </div>
-                                    ) : (
-                                        skillsList.map((skill, idx) => (
-                                            <div
-                                                key={idx}
-                                                title={skill.description || 'No description available in SKILL.md'}
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'column',
-                                                    justifyContent: 'flex-start',
-                                                    background: 'rgba(255,255,255,0.05)',
-                                                    padding: '12px',
-                                                    borderRadius: '8px',
-                                                    border: '1px solid rgba(255,255,255,0.1)',
-                                                    cursor: 'pointer',
-                                                    transition: 'all 0.2s ease',
-                                                }}
-                                                onMouseEnter={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-                                                    e.currentTarget.style.transform = 'translateY(-2px)'
-                                                }}
-                                                onMouseLeave={(e) => {
-                                                    e.currentTarget.style.background = 'rgba(255,255,255,0.05)'
-                                                    e.currentTarget.style.transform = 'translateY(0)'
-                                                }}
-                                            >
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                                                    {Icons.skills}
-                                                    <span style={{ fontWeight: 600, fontSize: '14px', color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                        {skill.name}
+                                <div className="h-[1px] bg-white/10 my-6 w-full max-w-[536px] mx-auto" />
+
+                                <Row label="Terminal App">
+                                    <Select value={settings.terminalApp || 'Terminal'} onValueChange={v => update('terminalApp', v)}>
+                                        <SelectTrigger className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                            <SelectValue placeholder="Select terminal" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white/90">
+                                            <SelectItem value="Terminal">Terminal</SelectItem>
+                                            <SelectItem value="iTerm">iTerm</SelectItem>
+                                            <SelectItem value="Warp">Warp</SelectItem>
+                                            <SelectItem value="Alacritty">Alacritty</SelectItem>
+                                            <SelectItem value="WezTerm">WezTerm</SelectItem>
+                                            <SelectItem value="Ghostty">Ghostty</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Row>
+
+                                <Row label="Text Size">
+                                    <div className="inline-flex bg-white/5 p-1 rounded-lg border border-white/5">
+                                        <button
+                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'small' ? 'bg-white/15 text-white/95 shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+                                            onClick={() => update('fontSize', 'small')}
+                                        >
+                                            <span className="text-[13px] font-semibold">Aa</span>
+                                        </button>
+                                        <button
+                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'medium' ? 'bg-white/15 text-white/95 shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+                                            onClick={() => update('fontSize', 'medium')}
+                                        >
+                                            <span className="text-[15px] font-semibold">Aa</span>
+                                        </button>
+                                    </div>
+                                </Row>
+
+                                <Row label="Appearance">
+                                    <div className="flex gap-6 mt-1">
+                                        <button className="flex flex-col items-center gap-2 group text-white/40 hover:text-white/80">
+                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-white/30 transition-all">
+                                                <Sun className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-medium">Light</span>
+                                        </button>
+                                        <button className="flex flex-col items-center gap-2 group text-white/40 hover:text-white/80">
+                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-white/30 transition-all">
+                                                <Moon className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs font-medium">Dark</span>
+                                        </button>
+                                        <button className="flex flex-col items-center gap-2 text-white/95 font-semibold">
+                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border-2 border-indigo-500/50 bg-indigo-500/15 text-indigo-200 transition-all">
+                                                <Monitor className="w-5 h-5" />
+                                            </div>
+                                            <span className="text-xs">System</span>
+                                        </button>
+                                    </div>
+                                </Row>
+                            </TabsContent>
+
+                            <TabsContent value="skills" className="mt-0 outline-none">
+                                <Row label="Skills Path">
+                                    <Input
+                                        className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        placeholder="e.g. ~/my-skills"
+                                        value={settings.skillsPath || ''}
+                                        onChange={e => update('skillsPath', e.target.value)}
+                                    />
+                                </Row>
+                                <div className="h-[1px] bg-white/10 my-6 w-full max-w-[536px] mx-auto" />
+                                <Row label="Discovered Skills" alignTop>
+                                    <div className="grid grid-cols-2 gap-3 w-full">
+                                        {skillsList.length === 0 ? (
+                                            <div className="text-white/40 text-[13px] col-span-2">
+                                                No skills found in this directory. Add a valid path above. <br />
+                                                <span className="opacity-80 mt-1 block">(Tip: Clone https://github.com/dyike/eino-skills)</span>
+                                            </div>
+                                        ) : (
+                                            skillsList.map((skill, idx) => (
+                                                <div
+                                                    key={idx}
+                                                    title={skill.description || 'No description available in SKILL.md'}
+                                                    className="group flex flex-col justify-start bg-white/5 p-3 rounded-lg border border-white/10 cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5"
+                                                >
+                                                    <div className="flex items-center gap-2 mb-1.5">
+                                                        <FolderGit2 className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
+                                                        <span className="font-semibold text-[14px] text-white/90 truncate">
+                                                            {skill.name}
+                                                        </span>
+                                                    </div>
+                                                    <span className="text-xs text-white/40 break-all line-clamp-2 leading-relaxed">
+                                                        {skill.description || skill.path}
                                                     </span>
                                                 </div>
-                                                <span style={{ fontSize: '12px', color: '#999', wordBreak: 'break-all', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                                                    {skill.description || skill.path}
-                                                </span>
-                                            </div>
-                                        ))
-                                    )}
-                                </div>
-                            </Row>
+                                            ))
+                                        )}
+                                    </div>
+                                </Row>
+                            </TabsContent>
+
+                            <TabsContent value="ai" className="mt-0 outline-none">
+                                <Row label="Provider">
+                                    <Select value={settings.ai.provider} onValueChange={(v: any) => updateAI('provider', v)}>
+                                        <SelectTrigger className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                            <SelectValue placeholder="Select AI provider" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white/90">
+                                            <SelectItem value="openai">OpenAI</SelectItem>
+                                            <SelectItem value="ollama">Ollama</SelectItem>
+                                            <SelectItem value="openai-compatible">OpenAI-Compatible</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </Row>
+
+                                {settings.ai.provider === 'openai' && (<>
+                                    <Row label="API Key">
+                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiApiKey} onChange={e => updateAI('openaiApiKey', e.target.value)} />
+                                    </Row>
+                                    <Row label="Model">
+                                        <Input placeholder="gpt-4o-mini" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                    </Row>
+                                </>)}
+
+                                {settings.ai.provider === 'ollama' && (<>
+                                    <Row label="URL">
+                                        <Input placeholder="http://localhost:11434" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.ollamaBaseUrl} onChange={e => updateAI('ollamaBaseUrl', e.target.value)} />
+                                    </Row>
+                                    <Row label="Model">
+                                        <Input placeholder="llama3" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                    </Row>
+                                </>)}
+
+                                {settings.ai.provider === 'openai-compatible' && (<>
+                                    <Row label="Base URL">
+                                        <Input placeholder="https://api.example.com/v1" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleBaseUrl} onChange={e => updateAI('openaiCompatibleBaseUrl', e.target.value)} />
+                                    </Row>
+                                    <Row label="API Key">
+                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleApiKey} onChange={e => updateAI('openaiCompatibleApiKey', e.target.value)} />
+                                    </Row>
+                                    <Row label="Model">
+                                        <Input placeholder="deepseek-chat" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleModel} onChange={e => updateAI('openaiCompatibleModel', e.target.value)} />
+                                    </Row>
+                                </>)}
+                            </TabsContent>
+
+                            <TabsContent value="extensions" className="mt-0 outline-none flex items-center justify-center p-16">
+                                <span className="text-white/30 text-sm">Manage your extensions here (Coming Soon)</span>
+                            </TabsContent>
+
+                            <TabsContent value="advanced" className="mt-0 outline-none">
+                                <Row label="Data Directory">
+                                    <span className="text-[13px] text-white/60 font-mono tracking-tight bg-white/5 px-3 py-1.5 rounded border border-white/5">~/Library/Application Support/Void</span>
+                                </Row>
+                            </TabsContent>
+
                         </div>
-                    )}
-
-                    {activeTab === 'ai' && (
-                        <div className="rc-section">
-                            <Row label="Provider">
-                                <select className="rc-select" value={settings.ai.provider} onChange={e => updateAI('provider', e.target.value as any)}>
-                                    <option value="openai">OpenAI</option>
-                                    <option value="ollama">Ollama</option>
-                                    <option value="openai-compatible">OpenAI-Compatible</option>
-                                </select>
-                            </Row>
-                            {settings.ai.provider === 'openai' && (<>
-                                <Row label="API Key"><input className="rc-input" type="password" value={settings.ai.openaiApiKey} onChange={e => updateAI('openaiApiKey', e.target.value)} placeholder="sk-..." /></Row>
-                                <Row label="Model"><input className="rc-input" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} placeholder="gpt-4o-mini" /></Row>
-                            </>)}
-                            {settings.ai.provider === 'ollama' && (<>
-                                <Row label="URL"><input className="rc-input" value={settings.ai.ollamaBaseUrl} onChange={e => updateAI('ollamaBaseUrl', e.target.value)} placeholder="http://localhost:11434" /></Row>
-                                <Row label="Model"><input className="rc-input" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} placeholder="llama3" /></Row>
-                            </>)}
-                            {settings.ai.provider === 'openai-compatible' && (<>
-                                <Row label="Base URL"><input className="rc-input" value={settings.ai.openaiCompatibleBaseUrl} onChange={e => updateAI('openaiCompatibleBaseUrl', e.target.value)} placeholder="https://api.example.com/v1" /></Row>
-                                <Row label="API Key"><input className="rc-input" type="password" value={settings.ai.openaiCompatibleApiKey} onChange={e => updateAI('openaiCompatibleApiKey', e.target.value)} /></Row>
-                                <Row label="Model"><input className="rc-input" value={settings.ai.openaiCompatibleModel} onChange={e => updateAI('openaiCompatibleModel', e.target.value)} /></Row>
-                            </>)}
-                        </div>
-                    )}
-
-                    {activeTab === 'extensions' && (
-                        <div className="rc-empty">Manage your extensions here (Coming Soon)</div>
-                    )}
-
-                    {activeTab === 'advanced' && (
-                        <div className="rc-section">
-                            <Row label="Data Directory">
-                                <span style={{ fontSize: 13, color: '#404040', fontFamily: 'monospace' }}>~/Library/Application Support/Void</span>
-                            </Row>
-                        </div>
-                    )}
-
-                    {activeTab === 'about' && (
-                        <div className="rc-empty">Void Launcher<br />Version 1.0.0</div>
                     )}
                 </div>
-            </div>
 
-            {/* Save Banner */}
-            {(activeTab === 'general' || activeTab === 'ai') && (
-                <div className="rc-footer">
-                    <button className="rc-save-btn" onClick={save} disabled={saving}>
-                        {saving ? 'Saving...' : saved ? 'Settings Saved' : 'Save Changes'}
-                    </button>
-                    <span className="rc-footer-hint">Some changes require a restart</span>
-                </div>
-            )}
-
-            <style>{STYLES}</style>
+                {/* Save Banner */}
+                {(activeTab === 'general' || activeTab === 'ai') && (
+                    <div className="border-t border-white/5 bg-white/[0.015] px-8 py-4 flex items-center justify-end gap-4" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <span className="text-xs text-white/30">Some changes require a restart</span>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border-none"
+                            onClick={save}
+                            disabled={saving}
+                        >
+                            {saving ? 'Saving...' : saved ? 'Settings Saved' : 'Save Changes'}
+                        </Button>
+                    </div>
+                )}
+            </Tabs>
         </div>
     )
 }
-
-// ─── Shared Components ────────────────────────────────────────────────────
-
-function Row({ label, children, ...props }: { label: string; children?: React.ReactNode;[key: string]: any }) {
-    return (
-        <div className="rc-row" {...props}>
-            <div className="rc-row-label">{label}</div>
-            <div className="rc-row-control">{children}</div>
-        </div>
-    )
-}
-
-// ─── Styles ───────────────────────────────────────────────────────────────
-
-const STYLES = `
-html, body, #root { margin:0; padding:0; height:100%; background: transparent; }
-
-.rc-root {
-    display: flex;
-    flex-direction: column;
-    height: 100vh;
-    background: rgba(14, 14, 18, 0.88);
-    backdrop-filter: blur(40px) saturate(180%);
-    -webkit-backdrop-filter: blur(40px) saturate(180%);
-    color: rgba(255, 255, 255, 0.9);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-    -webkit-font-smoothing: antialiased;
-    user-select: none;
-    border-radius: 10px;
-    overflow: hidden;
-}
-
-.rc-loading { display:flex; align-items:center; justify-content:center; height:100vh; color:rgba(255,255,255,0.4); font-size:14px; }
-
-/* ── Toolbar & Tab Bar ── */
-.rc-toolbar-title {
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 38px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 13px;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.5);
-    -webkit-app-region: drag;
-    pointer-events: none;
-}
-
-.rc-tabbar {
-    display: flex;
-    justify-content: center;
-    gap: 16px;
-    padding: 38px 24px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    -webkit-app-region: drag;
-}
-
-.rc-tab {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    padding: 10px 18px 12px;
-    border: none;
-    background: transparent;
-    cursor: pointer;
-    color: rgba(255, 255, 255, 0.35);
-    border-radius: 8px 8px 0 0;
-    transition: all 0.1s ease;
-    -webkit-app-region: no-drag;
-}
-.rc-tab:hover { background: rgba(255,255,255,0.05); color: rgba(255, 255, 255, 0.7); }
-.rc-tab.active { background: rgba(255,255,255,0.09); color: rgba(255, 255, 255, 0.95); }
-
-.rc-tab-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: inherit;
-}
-
-.rc-tab-label {
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-}
-
-/* ── Content ── */
-.rc-content {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    /* let root background show through */
-}
-.rc-scroll-view {
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow-y: auto;
-    padding: 32px 0 64px;
-}
-.rc-section {
-    max-width: 600px;
-    margin: 0 auto;
-}
-.rc-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.08);
-    margin: 32px auto;
-    width: calc(100% - 64px);
-    max-width: 536px;
-}
-
-/* ── Layout Rows ── */
-.rc-row {
-    display: grid;
-    grid-template-columns: 160px 1fr;
-    gap: 24px;
-    padding: 12px 32px;
-    align-items: center;
-}
-.rc-row-label {
-    text-align: right;
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.5);
-    letter-spacing: 0.02em;
-}
-.rc-row-control {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-/* ── Controls ── */
-.rc-checkbox {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 13px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.85);
-    cursor: pointer;
-}
-.rc-checkbox input[type="checkbox"] {
-    margin: 0;
-    width: 14px;
-    height: 14px;
-    accent-color: #6366f1; /* Indigo brand accent */
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 4px;
-    background: rgba(255,255,255,0.05);
-}
-
-.rc-hotkey-btn {
-    background: rgba(255, 255, 255, 0.07);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 8px;
-    padding: 8px 24px;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 15px;
-    font-weight: 500;
-    font-family: inherit;
-    cursor: pointer;
-    min-width: 280px;
-    text-align: center;
-    transition: all 0.15s;
-    letter-spacing: 0.02em;
-}
-.rc-hotkey-btn:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.15); }
-.rc-hotkey-btn.recording {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.4);
-    color: rgba(180, 183, 255, 0.95);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.25);
-}
-
-.rc-segmented-control {
-    display: inline-flex;
-    background: rgba(255, 255, 255, 0.04);
-    padding: 4px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-}
-.rc-segment {
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    padding: 4px 12px;
-    color: rgba(255, 255, 255, 0.4);
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.15s;
-    min-width: 44px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-.rc-segment:hover { color: rgba(255, 255, 255, 0.8); }
-.rc-segment.active {
-    background: rgba(255, 255, 255, 0.12);
-    color: rgba(255, 255, 255, 0.95);
-    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
-}
-
-/* ── Appearance Group ── */
-.rc-appearance-group {
-    display: flex;
-    gap: 24px;
-    margin-top: 4px;
-}
-.rc-appearance-btn {
-    background: none;
-    border: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
-    cursor: pointer;
-    color: rgba(255, 255, 255, 0.45);
-    font-size: 12px;
-    font-weight: 500;
-}
-.rc-appearance-btn:hover { color: rgba(255, 255, 255, 0.85); }
-.rc-appearance-btn.active { color: rgba(255, 255, 255, 0.95); font-weight: 600; }
-.rc-appearance-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 20px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: rgba(255, 255, 255, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    background: rgba(255, 255, 255, 0.03);
-    transition: all 0.15s;
-}
-.rc-appearance-btn:hover .rc-appearance-icon { border-color: rgba(255, 255, 255, 0.3); }
-.rc-appearance-btn.active .rc-appearance-icon {
-    background: rgba(99, 102, 241, 0.15);
-    border-color: rgba(99, 102, 241, 0.5);
-    border-width: 2px;
-    color: rgba(180, 183, 255, 0.95);
-}
-
-/* ── Inputs ── */
-.rc-input, .rc-select {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 8px;
-    padding: 8px 14px;
-    color: rgba(255, 255, 255, 0.9);
-    font-size: 14px;
-    font-family: inherit;
-    font-weight: 500;
-    width: 280px;
-    outline: none;
-    transition: all 0.15s;
-    box-sizing: border-box;
-}
-.rc-input:focus, .rc-select:focus {
-    border-color: #6366f1;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(99,102,241,0.2);
-}
-.rc-input::placeholder { color: rgba(255, 255, 255, 0.3); }
-
-.rc-select > option { background: #1a1a1e; color: #fff; }
-
-.rc-empty { text-align: center; padding: 64px 0; color: rgba(255, 255, 255, 0.3); font-size: 14px; }
-
-/* ── Footer ── */
-.rc-footer {
-    padding: 16px 32px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-    background: rgba(255, 255, 255, 0.015);
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 16px;
-}
-.rc-save-btn {
-    background: rgba(99, 102, 241, 0.25);
-    border: none;
-    border-radius: 6px;
-    padding: 6px 16px;
-    color: rgba(180, 183, 255, 0.92);
-    font-size: 13px;
-    font-family: inherit;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-.rc-save-btn:hover { background: rgba(99, 102, 241, 0.4); }
-.rc-save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.rc-footer-hint { font-size: 12px; color: rgba(255, 255, 255, 0.35); }
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.15); border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.25); }
-`
 
 export default SettingsView
