@@ -15,6 +15,7 @@ import (
 
 	"github.com/dyike/Void/internal/service/filesearch"
 	"github.com/dyike/Void/internal/service/frecency"
+	"github.com/dyike/Void/internal/service/settings"
 )
 
 // CommandInfo represents a launchable command.
@@ -39,16 +40,18 @@ type Service struct {
 	iconCacheDir string
 	cacheTTL     time.Duration
 	frecency     *frecency.Store
+	settings     *settings.Service
 }
 
 // NewService creates a new commands service.
-func NewService(dataDir string) *Service {
+func NewService(dataDir string, settingsSvc *settings.Service) *Service {
 	iconCacheDir := filepath.Join(dataDir, "icon-cache")
 	_ = os.MkdirAll(iconCacheDir, 0755)
 	return &Service{
 		iconCacheDir: iconCacheDir,
 		cacheTTL:     20 * time.Minute,
 		frecency:     frecency.NewStore(dataDir),
+		settings:     settingsSvc,
 	}
 }
 
@@ -152,7 +155,13 @@ func (s *Service) ExecuteSystemCommand(id string) error {
 	case "system-open-finder":
 		return exec.Command("open", "-a", "Finder").Run()
 	case "system-open-terminal":
-		return exec.Command("open", "-a", "Terminal").Run()
+		appName := "Terminal"
+		if s.settings != nil {
+			if cfg, err := s.settings.GetSettings(); err == nil && cfg != nil && cfg.TerminalApp != "" {
+				appName = cfg.TerminalApp
+			}
+		}
+		return exec.Command("open", "-a", appName).Run()
 	case "system-show-desktop":
 		script := `tell application "System Events" to key code 103 using {command down, mission control key down}`
 		return exec.Command("osascript", "-e", script).Run()

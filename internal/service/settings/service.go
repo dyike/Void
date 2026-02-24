@@ -30,6 +30,7 @@ type AppSettings struct {
 	CommandHotkeys   map[string]string `json:"commandHotkeys"`
 	FontSize         string            `json:"fontSize"` // "small" | "medium" | "large"
 	BaseColor        string            `json:"baseColor"`
+	TerminalApp      string            `json:"terminalApp"`
 	AI               AISettings        `json:"ai"`
 }
 
@@ -48,6 +49,7 @@ var defaultSettings = AppSettings{
 	CommandHotkeys:   map[string]string{},
 	FontSize:         "medium",
 	BaseColor:        "#101113",
+	TerminalApp:      "Terminal",
 	AI:               defaultAI,
 }
 

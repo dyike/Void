@@ -79,6 +79,7 @@ export class AppSettings {
      */
     "fontSize": string;
     "baseColor": string;
+    "terminalApp": string;
     "ai": AISettings;
 
     /** Creates a new AppSettings instance. */
@@ -104,6 +105,9 @@ export class AppSettings {
         if (!("baseColor" in $$source)) {
             this["baseColor"] = "";
         }
+        if (!("terminalApp" in $$source)) {
+            this["terminalApp"] = "";
+        }
         if (!("ai" in $$source)) {
             this["ai"] = (new AISettings());
         }
@@ -119,7 +123,7 @@ export class AppSettings {
         const $$createField2_0 = $$createType0;
         const $$createField3_0 = $$createType0;
         const $$createField4_0 = $$createType1;
-        const $$createField7_0 = $$createType2;
+        const $$createField8_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pinnedCommands" in $$parsedSource) {
             $$parsedSource["pinnedCommands"] = $$createField1_0($$parsedSource["pinnedCommands"]);
@@ -134,7 +138,7 @@ export class AppSettings {
             $$parsedSource["commandHotkeys"] = $$createField4_0($$parsedSource["commandHotkeys"]);
         }
         if ("ai" in $$parsedSource) {
-            $$parsedSource["ai"] = $$createField7_0($$parsedSource["ai"]);
+            $$parsedSource["ai"] = $$createField8_0($$parsedSource["ai"]);
         }
         return new AppSettings($$parsedSource as Partial<AppSettings>);
     }

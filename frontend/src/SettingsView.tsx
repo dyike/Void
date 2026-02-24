@@ -197,6 +197,21 @@ const SettingsView: React.FC = () => {
 
                             <div className="rc-divider" />
 
+                            <Row label="Terminal App">
+                                <select
+                                    className="rc-select"
+                                    value={settings.terminalApp || 'Terminal'}
+                                    onChange={e => update('terminalApp', e.target.value)}
+                                >
+                                    <option value="Terminal">Terminal</option>
+                                    <option value="iTerm">iTerm</option>
+                                    <option value="Warp">Warp</option>
+                                    <option value="Alacritty">Alacritty</option>
+                                    <option value="WezTerm">WezTerm</option>
+                                    <option value="Ghostty">Ghostty</option>
+                                </select>
+                            </Row>
+
                             <Row label="Text Size">
                                 <div className="rc-segmented-control">
                                     <button
