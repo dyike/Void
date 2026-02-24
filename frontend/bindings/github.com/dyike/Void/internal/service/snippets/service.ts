@@ -38,11 +38,27 @@ export function DeleteSnippet(id: string): $CancellablePromise<void> {
 }
 
 /**
+ * ExpandSnippet returns the content of the snippet matching the given prefix, or nil.
+ */
+export function ExpandSnippet(prefix: string): $CancellablePromise<string | null> {
+    return $Call.ByID(2205983406, prefix);
+}
+
+/**
  * FindByPrefix returns the first snippet whose prefix matches.
  */
 export function FindByPrefix(prefix: string): $CancellablePromise<$models.Snippet | null> {
     return $Call.ByID(1355108107, prefix).then(($result: any) => {
         return $$createType1($result);
+    });
+}
+
+/**
+ * GetAllPrefixes returns all non-empty snippet prefixes.
+ */
+export function GetAllPrefixes(): $CancellablePromise<string[]> {
+    return $Call.ByID(1246756618).then(($result: any) => {
+        return $$createType2($result);
     });
 }
 
@@ -60,7 +76,7 @@ export function GetSnippet(id: string): $CancellablePromise<$models.Snippet | nu
  */
 export function GetSnippets(query: string): $CancellablePromise<$models.Snippet[]> {
     return $Call.ByID(355095857, query).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType3($result);
     });
 }
 
@@ -76,4 +92,5 @@ export function UpdateSnippet(id: string, name: string, content: string, prefix:
 // Private type creation functions
 const $$createType0 = $models.Snippet.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $Create.Array($$createType0);
+const $$createType2 = $Create.Array($Create.Any);
+const $$createType3 = $Create.Array($$createType0);

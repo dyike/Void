@@ -4,15 +4,15 @@ package hotkey
 
 /*
 #cgo CFLAGS: -x objective-c
-#cgo LDFLAGS: -framework CoreGraphics -framework CoreFoundation -framework ApplicationServices
+#cgo LDFLAGS: -framework CoreGraphics -framework CoreFoundation -framework ApplicationServices -framework AppKit
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
+#include <AppKit/AppKit.h>
 
 // ── Configurable hotkey ───────────────────────────────────────────────────
 
-// Current hotkey configuration (defaults to Option+Space)
 static CGKeyCode  g_keyCode   = 49;                          // Space
 static int        g_modifiers = kCGEventFlagMaskAlternate;   // Option
 
@@ -21,25 +21,172 @@ void setHotkeyConfig(int keyCode, int modifiers) {
     g_modifiers = modifiers;
 }
 
+// ── Snippet character buffer ──────────────────────────────────────────────
+
+#define SNIPPET_BUF_SIZE 64
+static char g_snippet_buf[SNIPPET_BUF_SIZE];
+static int  g_snippet_len = 0;
+static volatile int g_debug_keycount = 0;  // debug: count keyDown events that reach buffer code
+
+static int getDebugKeyCount(void) { return g_debug_keycount; }
+
+static char keycodeToChar(CGKeyCode kc) {
+    switch (kc) {
+        case  0: return 'a'; case  1: return 's'; case  2: return 'd';
+        case  3: return 'f'; case  4: return 'h'; case  5: return 'g';
+        case  6: return 'z'; case  7: return 'x'; case  8: return 'c';
+        case  9: return 'v'; case 11: return 'b'; case 12: return 'q';
+        case 13: return 'w'; case 14: return 'e'; case 15: return 'r';
+        case 16: return 'y'; case 17: return 't'; case 18: return '1';
+        case 19: return '2'; case 20: return '3'; case 21: return '4';
+        case 22: return '6'; case 23: return '5'; case 24: return '=';
+        case 25: return '9'; case 26: return '7'; case 27: return '-';
+        case 28: return '8'; case 29: return '0'; case 30: return ']';
+        case 31: return 'o'; case 32: return 'u'; case 33: return '[';
+        case 34: return 'i'; case 35: return 'p'; case 37: return 'l';
+        case 38: return 'j'; case 39: return '\'';case 40: return 'k';
+        case 41: return ';'; case 42: return '\\';case 43: return ',';
+        case 44: return '/'; case 45: return 'n'; case 46: return 'm';
+        case 47: return '.'; case 50: return '`';
+        case 49: return ' ';
+        default: return 0;
+    }
+}
+
+static void snippetBufAppend(char c) {
+    if (g_snippet_len < SNIPPET_BUF_SIZE - 1) {
+        g_snippet_buf[g_snippet_len++] = c;
+    } else {
+        for (int i = 0; i < SNIPPET_BUF_SIZE - 2; i++) {
+            g_snippet_buf[i] = g_snippet_buf[i + 1];
+        }
+        g_snippet_buf[SNIPPET_BUF_SIZE - 2] = c;
+    }
+    g_snippet_buf[g_snippet_len] = '\0';
+}
+
+static void snippetBufClear(void) {
+    g_snippet_len = 0;
+    g_snippet_buf[0] = '\0';
+}
+
+static const char* getSnippetBuffer(void) {
+    return g_snippet_buf;
+}
+
+static void clearSnippetBuffer(void) {
+    snippetBufClear();
+}
+
+// ── Synthetic key events ──────────────────────────────────────────────────
+
+static void sendBackspaces(int n) {
+    for (int i = 0; i < n; i++) {
+        CGEventRef down = CGEventCreateKeyboardEvent(NULL, 51, true);
+        CGEventRef up   = CGEventCreateKeyboardEvent(NULL, 51, false);
+        CGEventPost(kCGAnnotatedSessionEventTap, down);
+        CGEventPost(kCGAnnotatedSessionEventTap, up);
+        CFRelease(down);
+        CFRelease(up);
+        usleep(5000);
+    }
+}
+
+static void pasteClipboard(void) {
+    CGEventRef down = CGEventCreateKeyboardEvent(NULL, 9, true);
+    CGEventRef up   = CGEventCreateKeyboardEvent(NULL, 9, false);
+    CGEventSetFlags(down, kCGEventFlagMaskCommand);
+    CGEventSetFlags(up, kCGEventFlagMaskCommand);
+    CGEventPost(kCGAnnotatedSessionEventTap, down);
+    CGEventPost(kCGAnnotatedSessionEventTap, up);
+    CFRelease(down);
+    CFRelease(up);
+}
+
 // ── Event tap ─────────────────────────────────────────────────────────────
 
+static CFMachPortRef gTap;  // forward declaration for callback
+
 static volatile int hotkey_fired = 0;
+static volatile int g_all_events = 0;  // debug: count ALL events reaching callback
+
+static int getAllEventCount(void) { return g_all_events; }
 
 static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *userInfo) {
+    // Re-enable tap if macOS disabled it due to timeout
+    if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
+        if (gTap) CGEventTapEnable(gTap, true);
+        return event;
+    }
+
     if (type == kCGEventKeyDown) {
+        g_all_events++;
         CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
         CGEventFlags flags = CGEventGetFlags(event);
         int masked = (int)(flags & (kCGEventFlagMaskAlternate | kCGEventFlagMaskCommand |
                                     kCGEventFlagMaskControl   | kCGEventFlagMaskShift));
+
+        // Check hotkey
         if (keyCode == g_keyCode && masked == g_modifiers) {
             hotkey_fired = 1;
-            return NULL; // consume event
+            return NULL;
+        }
+
+        // Buffer characters for snippet expansion (only no modifiers or Shift)
+        int nonShiftMods = masked & ~kCGEventFlagMaskShift;
+        if (nonShiftMods == 0) {
+            g_debug_keycount++;
+            if (keyCode == 36 || keyCode == 48 || keyCode == 53 || keyCode == 49) {
+                // Return, Tab, Escape, Space → clear buffer
+                snippetBufClear();
+            } else if (keyCode == 51) {
+                // Backspace → remove last char
+                if (g_snippet_len > 0) {
+                    g_snippet_len--;
+                    g_snippet_buf[g_snippet_len] = '\0';
+                }
+            } else {
+                char c = keycodeToChar(keyCode);
+                if (c != 0) {
+                    int shifted = (masked & kCGEventFlagMaskShift) != 0;
+                    if (shifted) {
+                        switch (c) {
+                            case ';': c = ':'; break;
+                            case '\'': c = '"'; break;
+                            case ',': c = '<'; break;
+                            case '.': c = '>'; break;
+                            case '/': c = '?'; break;
+                            case '1': c = '!'; break;
+                            case '2': c = '@'; break;
+                            case '3': c = '#'; break;
+                            case '4': c = '$'; break;
+                            case '5': c = '%'; break;
+                            case '6': c = '^'; break;
+                            case '7': c = '&'; break;
+                            case '8': c = '*'; break;
+                            case '9': c = '('; break;
+                            case '0': c = ')'; break;
+                            case '-': c = '_'; break;
+                            case '=': c = '+'; break;
+                            case '[': c = '{'; break;
+                            case ']': c = '}'; break;
+                            case '\\': c = '|'; break;
+                            case '`': c = '~'; break;
+                            default:
+                                if (c >= 'a' && c <= 'z') c -= 32;
+                                break;
+                        }
+                    }
+                    snippetBufAppend(c);
+                }
+            }
+        } else {
+            snippetBufClear();
         }
     }
     return event;
 }
 
-static CFMachPortRef gTap = NULL;
 static CFRunLoopSourceRef gRunLoopSrc = NULL;
 
 static int startEventTap(void) {
@@ -53,7 +200,6 @@ static int startEventTap(void) {
         NULL
     );
     if (!gTap) return -1;
-
     gRunLoopSrc = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, gTap, 0);
     CFRunLoopAddSource(CFRunLoopGetMain(), gRunLoopSrc, kCFRunLoopCommonModes);
     CGEventTapEnable(gTap, true);
@@ -61,20 +207,28 @@ static int startEventTap(void) {
 }
 
 static void stopEventTap(void) {
-    if (gTap) {
-        CGEventTapEnable(gTap, false);
-        CFRelease(gTap);
-        gTap = NULL;
-    }
-    if (gRunLoopSrc) {
-        CFRelease(gRunLoopSrc);
-        gRunLoopSrc = NULL;
-    }
+    if (gTap) { CGEventTapEnable(gTap, false); CFRelease(gTap); gTap = NULL; }
+    if (gRunLoopSrc) { CFRelease(gRunLoopSrc); gRunLoopSrc = NULL; }
 }
 
 static int pollHotkey(void) {
     if (hotkey_fired) { hotkey_fired = 0; return 1; }
     return 0;
+}
+
+// ── Clipboard helpers ─────────────────────────────────────────────────────
+
+static void setClipboardText(const char *text) {
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    [pb clearContents];
+    [pb setString:[NSString stringWithUTF8String:text] forType:NSPasteboardTypeString];
+}
+
+static char* getClipboardText(void) {
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    NSString *s = [pb stringForType:NSPasteboardTypeString];
+    if (s == nil) return NULL;
+    return strdup([s UTF8String]);
 }
 
 // ── Accessibility ─────────────────────────────────────────────────────────
@@ -97,14 +251,14 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	"unsafe"
 )
 
 // KeySpec describes a global hotkey combination.
 type KeySpec struct {
-	Key       string `json:"key"`       // e.g. "space", "a", "f1"
-	Modifiers string `json:"modifiers"` // comma-separated: "option", "cmd", "ctrl", "shift"
-	// Human-readable display string e.g. "⌥Space"
-	Display string `json:"display"`
+	Key       string `json:"key"`
+	Modifiers string `json:"modifiers"`
+	Display   string `json:"display"`
 }
 
 // DefaultHotkey is the factory default: Option+Space.
@@ -112,59 +266,33 @@ var DefaultHotkey = KeySpec{Key: "space", Modifiers: "option", Display: "⌥Spac
 
 // ─── Key code table ──────────────────────────────────────────────────────
 
-// keyCodes maps key name → macOS virtual keyCode.
-// Source: <Carbon/Events.h> kVK_* constants.
 var keyCodes = map[string]int{
-	// Special keys
-	"space":     49,
-	"return":    36,
-	"enter":     36,
-	"tab":       48,
-	"delete":    51,
-	"backspace": 51,
-	"escape":    53,
-	"esc":       53,
-	"capslock":  57,
-	"home":      115,
-	"end":       119,
-	"pageup":    116,
-	"pagedown":  121,
-	"left":      123,
-	"right":     124,
-	"down":      125,
-	"up":        126,
-	// Function keys
+	"space": 49, "return": 36, "enter": 36, "tab": 48,
+	"delete": 51, "backspace": 51, "escape": 53, "esc": 53,
+	"capslock": 57, "home": 115, "end": 119,
+	"pageup": 116, "pagedown": 121,
+	"left": 123, "right": 124, "down": 125, "up": 126,
 	"f1": 122, "f2": 120, "f3": 99, "f4": 118,
 	"f5": 96, "f6": 97, "f7": 98, "f8": 100,
 	"f9": 101, "f10": 109, "f11": 103, "f12": 111,
-	// Letters (US QWERTY)
 	"a": 0, "b": 11, "c": 8, "d": 2, "e": 14,
 	"f": 3, "g": 5, "h": 4, "i": 34, "j": 38,
 	"k": 40, "l": 37, "m": 46, "n": 45, "o": 31,
 	"p": 35, "q": 12, "r": 15, "s": 1, "t": 17,
-	"u": 32, "v": 9, "w": 13, "x": 7, "y": 16,
-	"z": 6,
-	// Numbers
-	"0": 29, "1": 18, "2": 19, "3": 20,
-	"4": 21, "5": 23, "6": 22, "7": 26,
-	"8": 28, "9": 25,
-	// Symbols
+	"u": 32, "v": 9, "w": 13, "x": 7, "y": 16, "z": 6,
+	"0": 29, "1": 18, "2": 19, "3": 20, "4": 21,
+	"5": 23, "6": 22, "7": 26, "8": 28, "9": 25,
 	"`": 50, "-": 27, "=": 24, "[": 33, "]": 30,
 	"\\": 42, ";": 41, "'": 39, ",": 43, ".": 47, "/": 44,
 }
 
-// modifierFlags maps modifier name → CGEventFlags mask value.
 var modifierFlags = map[string]int{
-	"option":  0x00080000, // kCGEventFlagMaskAlternate
-	"alt":     0x00080000,
-	"cmd":     0x00100000, // kCGEventFlagMaskCommand
-	"command": 0x00100000,
-	"ctrl":    0x00040000, // kCGEventFlagMaskControl
-	"control": 0x00040000,
-	"shift":   0x00020000, // kCGEventFlagMaskShift
+	"option": 0x00080000, "alt": 0x00080000,
+	"cmd": 0x00100000, "command": 0x00100000,
+	"ctrl": 0x00040000, "control": 0x00040000,
+	"shift": 0x00020000,
 }
 
-// modifierSymbols maps modifier name → display symbol.
 var modifierSymbols = map[string]string{
 	"option": "⌥", "alt": "⌥",
 	"cmd": "⌘", "command": "⌘",
@@ -172,7 +300,6 @@ var modifierSymbols = map[string]string{
 	"shift": "⇧",
 }
 
-// keyDisplayNames maps key name → display string.
 var keyDisplayNames = map[string]string{
 	"space": "Space", "return": "↩", "enter": "↩",
 	"tab": "⇥", "delete": "⌫", "backspace": "⌫",
@@ -183,14 +310,12 @@ var keyDisplayNames = map[string]string{
 
 // ─── Parsing ──────────────────────────────────────────────────────────────
 
-// ParseHotkey parses a hotkey string like "option+space" or "cmd+shift+a".
 func ParseHotkey(spec string) (*KeySpec, error) {
 	spec = strings.ToLower(strings.TrimSpace(spec))
 	parts := strings.Split(spec, "+")
 
 	var mods []string
 	var key string
-
 	for i, p := range parts {
 		p = strings.TrimSpace(p)
 		if i == len(parts)-1 {
@@ -199,12 +324,9 @@ func ParseHotkey(spec string) (*KeySpec, error) {
 			mods = append(mods, p)
 		}
 	}
-
-	// Normalize non-breaking spaces (Option+Space on Mac types \u00a0)
-	if key == "\u00a0" || key == " " {
+	if key == "\u00a0" || key == " " {
 		key = "space"
 	}
-
 	if key == "" {
 		return nil, fmt.Errorf("no key specified")
 	}
@@ -212,7 +334,6 @@ func ParseHotkey(spec string) (*KeySpec, error) {
 		return nil, fmt.Errorf("unknown key: %q", key)
 	}
 
-	// Build display string
 	var display string
 	for _, m := range mods {
 		if sym, ok := modifierSymbols[m]; ok {
@@ -227,14 +348,9 @@ func ParseHotkey(spec string) (*KeySpec, error) {
 		display += strings.ToUpper(key)
 	}
 
-	return &KeySpec{
-		Key:       key,
-		Modifiers: strings.Join(mods, ","),
-		Display:   display,
-	}, nil
+	return &KeySpec{Key: key, Modifiers: strings.Join(mods, ","), Display: display}, nil
 }
 
-// FormatSpec returns the "mod+mod+key" string for a KeySpec.
 func FormatSpec(ks KeySpec) string {
 	if ks.Modifiers == "" {
 		return ks.Key
@@ -246,21 +362,13 @@ func FormatSpec(ks KeySpec) string {
 
 var running atomic.Bool
 
-// Service manages the global CGEventTap hotkey.
 type Service struct{}
 
-// NewService creates a new hotkey service.
 func NewService() *Service { return &Service{} }
 
-// HasPermission reports whether Accessibility is granted.
 func HasPermission() bool { return C.checkAccessibility(0) != 0 }
+func RequestPermission()  { C.checkAccessibility(1) }
 
-// RequestPermission opens the Accessibility permission dialog.
-func RequestPermission() { C.checkAccessibility(1) }
-
-// Start registers a global hotkey using CGEventTap.
-// keySpec is a string like "option+space" or "cmd+a". Falls back to DefaultHotkey.
-// Returns true if the tap was successfully installed.
 func (s *Service) Start(h func(), keySpec string) bool {
 	if !s.configureKey(keySpec) {
 		return false
@@ -268,7 +376,6 @@ func (s *Service) Start(h func(), keySpec string) bool {
 	return s.startTap(h)
 }
 
-// Restart stops the current tap and starts a new one with the given keySpec.
 func (s *Service) Restart(h func(), keySpec string) bool {
 	s.Stop()
 	time.Sleep(50 * time.Millisecond)
@@ -281,13 +388,11 @@ func (s *Service) configureKey(keySpec string) bool {
 		log.Printf("hotkey: invalid spec %q: %v — using default", keySpec, err)
 		ks = &DefaultHotkey
 	}
-
 	keyCode, ok := keyCodes[ks.Key]
 	if !ok {
 		log.Printf("hotkey: unknown key %q — using default", ks.Key)
 		keyCode = keyCodes["space"]
 	}
-
 	modMask := 0
 	for _, m := range strings.Split(ks.Modifiers, ",") {
 		m = strings.TrimSpace(m)
@@ -301,7 +406,6 @@ func (s *Service) configureKey(keySpec string) bool {
 	if modMask == 0 {
 		modMask = modifierFlags["option"]
 	}
-
 	C.setHotkeyConfig(C.int(keyCode), C.int(modMask))
 	log.Printf("hotkey: configured as %s (keyCode=%d, modMask=0x%08x)", ks.Display, keyCode, modMask)
 	return true
@@ -316,13 +420,11 @@ func (s *Service) startTap(h func()) bool {
 			return false
 		}
 	}
-
 	ret := C.startEventTap()
 	if ret != 0 {
 		log.Println("hotkey: CGEventTapCreate failed — Accessibility may need to be re-granted")
 		return false
 	}
-
 	running.Store(true)
 	log.Println("hotkey: CGEventTap active")
 
@@ -334,12 +436,89 @@ func (s *Service) startTap(h func()) bool {
 			time.Sleep(20 * time.Millisecond)
 		}
 	}()
-
 	return true
 }
 
-// Stop removes the event tap.
 func (s *Service) Stop() {
 	running.Store(false)
 	C.stopEventTap()
+}
+
+// ─── Snippet Auto-Expand ─────────────────────────────────────────────────
+
+// SnippetLookupFn looks up a snippet prefix and returns the content if found.
+type SnippetLookupFn func(prefix string) *string
+
+// StartSnippetExpand starts a goroutine that monitors typed characters
+// and expands snippet prefixes.
+func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() []string) {
+	log.Printf("snippet: StartSnippetExpand called, running=%v", running.Load())
+	go func() {
+		log.Println("snippet: goroutine started")
+		var lastBuf string
+		tick := 0
+		for running.Load() {
+			buf := C.GoString(C.getSnippetBuffer())
+			keyCount := int(C.getDebugKeyCount())
+			allEvents := int(C.getAllEventCount())
+
+			// Log debug info every ~2 seconds (40 * 50ms)
+			tick++
+			if tick%40 == 0 {
+				log.Printf("snippet: [debug] allEvents=%d keyCount=%d bufLen=%d buf=%q", allEvents, keyCount, len(buf), buf)
+			}
+
+			if buf != lastBuf && len(buf) > 0 {
+				lastBuf = buf
+				prefixes := getPrefixes()
+				log.Printf("snippet: buffer=%q prefixes=%v", buf, prefixes)
+				for _, prefix := range prefixes {
+					if strings.HasSuffix(buf, prefix) {
+						content := lookup(prefix)
+						if content != nil {
+							log.Printf("snippet: MATCH! expanding prefix %q → %d chars", prefix, len(*content))
+							s.expandSnippet(prefix, *content)
+							C.clearSnippetBuffer()
+							lastBuf = ""
+							break
+						}
+					}
+				}
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		log.Println("snippet: goroutine exited (running=false)")
+	}()
+	log.Println("snippet: auto-expand active")
+}
+
+func (s *Service) expandSnippet(prefix string, content string) {
+	// 1. Save current clipboard
+	oldClip := C.getClipboardText()
+	var oldClipStr string
+	if oldClip != nil {
+		oldClipStr = C.GoString(oldClip)
+		C.free(unsafe.Pointer(oldClip))
+	}
+
+	// 2. Send backspaces to delete the prefix
+	C.sendBackspaces(C.int(len(prefix)))
+	time.Sleep(50 * time.Millisecond)
+
+	// 3. Set clipboard to snippet content
+	cContent := C.CString(content)
+	C.setClipboardText(cContent)
+	C.free(unsafe.Pointer(cContent))
+	time.Sleep(30 * time.Millisecond)
+
+	// 4. Paste (Cmd+V)
+	C.pasteClipboard()
+	time.Sleep(100 * time.Millisecond)
+
+	// 5. Restore original clipboard
+	if oldClipStr != "" {
+		cOld := C.CString(oldClipStr)
+		C.setClipboardText(cOld)
+		C.free(unsafe.Pointer(cOld))
+	}
 }

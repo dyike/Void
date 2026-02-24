@@ -126,6 +126,8 @@ func main() {
 		started := hotkeySvc.Start(toggleWindow, keySpec)
 		if started {
 			log.Printf("hotkey: active (%s)", keySpec)
+			// Start snippet auto-expand after event tap is active
+			hotkeySvc.StartSnippetExpand(snippetsSvc.ExpandSnippet, snippetsSvc.GetAllPrefixes)
 		} else {
 			log.Println("hotkey: CGEventTap not available — use system tray, or grant Accessibility in System Settings → Privacy & Security")
 		}

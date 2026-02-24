@@ -72,7 +72,7 @@ export class AppSettings {
     "pinnedCommands": string[];
     "recentCommands": string[];
     "disabledCommands": string[];
-    "commandHotkeys": { [_: string]: string };
+    "commandHotkeys": { [_ in string]?: string };
 
     /**
      * "small" | "medium" | "large"

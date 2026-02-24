@@ -26,7 +26,7 @@ export function Ask(prompt: string): $CancellablePromise<$models.AskResult | nul
 /**
  * AskWithHistory uses only the last user message (modu manages history internally).
  */
-export function AskWithHistory(messages: { [_: string]: any }[]): $CancellablePromise<$models.AskResult | null> {
+export function AskWithHistory(messages: { [_ in string]?: any }[]): $CancellablePromise<$models.AskResult | null> {
     return $Call.ByID(825515042, messages).then(($result: any) => {
         return $$createType1($result);
     });

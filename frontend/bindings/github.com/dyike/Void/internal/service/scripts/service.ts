@@ -24,7 +24,7 @@ export function CreateScript(name: string, mode: string): $CancellablePromise<st
 /**
  * Execute runs a script command and returns the output.
  */
-export function Execute(id: string, args: { [_: string]: string }): $CancellablePromise<$models.ExecutionResult | null> {
+export function Execute(id: string, args: { [_ in string]?: string }): $CancellablePromise<$models.ExecutionResult | null> {
     return $Call.ByID(3560643614, id, args).then(($result: any) => {
         return $$createType1($result);
     });

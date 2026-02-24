@@ -144,6 +144,28 @@ func (s *Service) FindByPrefix(prefix string) *Snippet {
 	return nil
 }
 
+// GetAllPrefixes returns all non-empty snippet prefixes.
+func (s *Service) GetAllPrefixes() []string {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	var prefixes []string
+	for _, sn := range s.snippets {
+		if sn.Prefix != "" {
+			prefixes = append(prefixes, sn.Prefix)
+		}
+	}
+	return prefixes
+}
+
+// ExpandSnippet returns the content of the snippet matching the given prefix, or nil.
+func (s *Service) ExpandSnippet(prefix string) *string {
+	sn := s.FindByPrefix(prefix)
+	if sn == nil {
+		return nil
+	}
+	return &sn.Content
+}
+
 // CopyToClipboard copies the snippet content to the macOS clipboard.
 func (s *Service) CopyToClipboard(id string) error {
 	sn, err := s.GetSnippet(id)

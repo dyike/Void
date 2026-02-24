@@ -18,7 +18,7 @@ export class ClipboardItem {
     "content": string;
     "preview"?: string;
     "timestamp": number;
-    "metadata"?: { [_: string]: any };
+    "metadata"?: { [_ in string]?: any };
 
     /** Creates a new ClipboardItem instance. */
     constructor($$source: Partial<ClipboardItem> = {}) {
