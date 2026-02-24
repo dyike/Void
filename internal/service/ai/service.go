@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -124,6 +125,8 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 				"running bash commands, searching code (grep), finding files, and listing directories.\n\n" +
 				"# Guidelines\n" +
 				"- Use the most appropriate tool for each task (prefer read/grep/find over bash when possible)\n" +
+				"- NEVER call the same tool with the same arguments twice — use the result from the first call\n" +
+				"- Once you have the information needed, respond immediately without additional tool calls\n" +
 				"- Read files before modifying them to understand existing content\n" +
 				"- Use edit for precise modifications instead of rewriting entire files\n" +
 				"- If a command or tool fails, try ONE alternative approach, then explain what happened\n" +
@@ -170,11 +173,15 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 				app.Event.Emit("AgentUpdate", e.AssistantMessageEvent.Delta)
 			}
 		case agent.EventTypeToolExecutionStart:
-			log.Printf("[AI] tool start: %s args=%v", e.ToolName, e.Args)
-			app.Event.Emit("AgentAction", fmt.Sprintf("Running: %s %v", e.ToolName, e.Args))
+			argsJSON, _ := json.Marshal(e.Args)
+			log.Printf("[AI] tool start: %s args=%s", e.ToolName, string(argsJSON))
+			app.Event.Emit("ToolCallStart", e.ToolName, string(argsJSON))
+			app.Event.Emit("AgentAction", fmt.Sprintf("Running: %s", e.ToolName))
 		case agent.EventTypeToolExecutionEnd:
-			log.Printf("[AI] tool end: %s", e.ToolName)
-			app.Event.Emit("AgentAction", "Analyzing results…")
+			resultJSON, _ := json.Marshal(e.Result)
+			log.Printf("[AI] tool end: %s isError=%v", e.ToolName, e.IsError)
+			app.Event.Emit("ToolCallEnd", e.ToolName, string(resultJSON), e.IsError)
+			app.Event.Emit("AgentAction", "")
 		case agent.EventTypeAgentEnd:
 			log.Printf("[AI] agent finished")
 		}

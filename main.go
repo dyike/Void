@@ -100,6 +100,7 @@ func main() {
 		if mainWindow.IsVisible() {
 			mainWindow.Hide()
 		} else {
+			mainWindow.Center()
 			mainWindow.Show()
 			mainWindow.Focus()
 		}
@@ -137,6 +138,7 @@ func main() {
 	tray.SetLabel("Void")
 	trayMenu := app.NewMenu()
 	trayMenu.Add("Show Void").OnClick(func(ctx *application.Context) {
+		mainWindow.Center()
 		mainWindow.Show()
 		mainWindow.Focus()
 	})
