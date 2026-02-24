@@ -169,6 +169,9 @@ const App: React.FC = () => {
       'system-lock-screen', 'system-sleep', 'system-empty-trash',
       'system-restart', 'system-shutdown', 'system-open-finder',
       'system-open-terminal', 'system-show-desktop',
+      'window-left-half', 'window-right-half', 'window-top-half', 'window-bottom-half',
+      'window-top-left', 'window-top-right', 'window-bottom-left', 'window-bottom-right',
+      'window-maximize', 'window-center',
     ])
     if (SYSTEM_ACTIONS.has(cmd.id)) {
       await CommandsService.ExecuteSystemCommand(cmd.id).catch(console.error)
