@@ -95,6 +95,43 @@ func main() {
 		},
 	})
 
+	// Settings window — standard macOS native window with title bar
+	var settingsWindow *application.WebviewWindow
+	openSettingsWindow := func() {
+		if settingsWindow != nil {
+			settingsWindow.Show()
+			settingsWindow.Focus()
+			return
+		}
+		settingsWindow = app.Window.NewWithOptions(application.WebviewWindowOptions{
+			Title:            "Void Settings",
+			Width:            780,
+			Height:           520,
+			MinWidth:         600,
+			MinHeight:        400,
+			Frameless:        false,
+			AlwaysOnTop:      false,
+			Hidden:           false,
+			BackgroundColour: application.NewRGBA(40, 40, 40, 255),
+			URL:              "/#/settings",
+			Mac: application.MacWindow{
+				Backdrop: application.MacBackdropTranslucent,
+				TitleBar: application.MacTitleBarHiddenInsetUnified,
+			},
+			MinimiseButtonState: application.ButtonDisabled,
+			MaximiseButtonState: application.ButtonDisabled,
+		})
+		settingsWindow.Center()
+		settingsWindow.Show()
+		settingsWindow.Focus()
+		settingsWindow.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
+			settingsWindow = nil
+		})
+	}
+
+	// Expose OpenSettingsWindow to frontend via settings service
+	settingsSvc.SetOpenSettingsFunc(openSettingsWindow)
+
 	// toggleWindow shows/hides the main launcher window.
 	toggleWindow := func() {
 		if mainWindow.IsVisible() {

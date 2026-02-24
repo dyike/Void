@@ -53,9 +53,22 @@ var defaultSettings = AppSettings{
 
 // Service manages app settings.
 type Service struct {
-	mu    sync.RWMutex
-	cache *AppSettings
-	path  string
+	mu               sync.RWMutex
+	cache            *AppSettings
+	path             string
+	openSettingsFunc func()
+}
+
+// SetOpenSettingsFunc sets the callback to open the settings window.
+func (s *Service) SetOpenSettingsFunc(fn func()) {
+	s.openSettingsFunc = fn
+}
+
+// OpenSettingsWindow opens the settings window.
+func (s *Service) OpenSettingsWindow() {
+	if s.openSettingsFunc != nil {
+		s.openSettingsFunc()
+	}
 }
 
 // NewService creates a new settings service, storing settings in the given directory.

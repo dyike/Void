@@ -31,6 +31,13 @@ export function GetSettings(): $CancellablePromise<$models.AppSettings | null> {
 }
 
 /**
+ * OpenSettingsWindow opens the settings window.
+ */
+export function OpenSettingsWindow(): $CancellablePromise<void> {
+    return $Call.ByID(2379815761);
+}
+
+/**
  * ResetCache forces a reload from disk on next access.
  */
 export function ResetCache(): $CancellablePromise<void> {
@@ -51,6 +58,13 @@ export function SaveSettings(updated: $models.AppSettings): $CancellablePromise<
  */
 export function SetGlobalHotkey(spec: string): $CancellablePromise<void> {
     return $Call.ByID(2565194761, spec);
+}
+
+/**
+ * SetOpenSettingsFunc sets the callback to open the settings window.
+ */
+export function SetOpenSettingsFunc(fn: any): $CancellablePromise<void> {
+    return $Call.ByID(178502227, fn);
 }
 
 // Private type creation functions

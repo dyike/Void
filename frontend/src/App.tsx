@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, X, Clipboard, Sparkles, Settings, ArrowLeft, Loader2, FileText } from 'lucide-react'
 import * as CommandsService from '../bindings/github.com/dyike/Void/internal/service/commands/service.js'
 import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculator/service.js'
+import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
 import ClipboardManager from './ClipboardManager'
 import AiChatView from './AiChatView'
-import SettingsView from './SettingsView'
 import SnippetsView from './SnippetsView'
 import ActionPanel, { buildActions } from './ActionPanel'
 import ScriptCommandsView from './ScriptCommandsView'
@@ -254,7 +254,6 @@ const App: React.FC = () => {
         <div className="view-overlay">
           {view === 'clipboard' && <ClipboardManager onClose={onBack} />}
           {view === 'ai' && <AiChatView />}
-          {view === 'settings' && <SettingsView />}
           {view === 'snippets' && <SnippetsView />}
           {view === 'scripts' && <ScriptCommandsView />}
         </div>
@@ -348,7 +347,11 @@ const App: React.FC = () => {
 
       {/* Footer */}
       <div className="footer">
-        <span className="footer-left">{loading ? 'Loading…' : `${flat.length} results`}</span>
+        <button className="footer-settings-btn" onClick={() => SettingsService.OpenSettingsWindow()} title="Settings">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+        </button>
         <div className="footer-actions">
           {selectedCmd && (
             <>
