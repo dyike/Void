@@ -172,7 +172,7 @@ const SettingsView: React.FC = () => {
 
             {/* ── Content Area ── */}
             <div className="rc-content">
-                <div className="rc-scroll-view">
+                <div className="rc-scroll-view" style={activeTab === 'about' ? { padding: 0, overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' } : {}}>
                     {activeTab === 'general' && (
                         <div className="rc-section">
                             <Row label="Startup">
@@ -311,7 +311,7 @@ function Row({ label, children, ...props }: { label: string; children?: React.Re
 // ─── Styles ───────────────────────────────────────────────────────────────
 
 const STYLES = `
-html, body, #root { margin:0; padding:0; height:100%; }
+html, body, #root { margin:0; padding:0; height:100%; background: transparent; }
 
 .rc-root {
     display: flex;
@@ -324,6 +324,8 @@ html, body, #root { margin:0; padding:0; height:100%; }
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
     user-select: none;
+    border-radius: 10px;
+    overflow: hidden;
 }
 
 .rc-loading { display:flex; align-items:center; justify-content:center; height:100vh; color:rgba(255,255,255,0.4); font-size:14px; }

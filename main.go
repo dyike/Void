@@ -87,11 +87,13 @@ func main() {
 		Frameless:        true,
 		AlwaysOnTop:      true,
 		Hidden:           false,
+		BackgroundType:   application.BackgroundTypeTransparent,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              "/",
 		Mac: application.MacWindow{
-			Backdrop: application.MacBackdropTranslucent,
-			TitleBar: application.MacTitleBarHidden,
+			Backdrop:   application.MacBackdropTranslucent,
+			TitleBar:   application.MacTitleBarHidden,
+			Appearance: application.NSAppearanceNameDarkAqua,
 		},
 	})
 
