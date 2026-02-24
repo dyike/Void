@@ -4,6 +4,7 @@ go 1.25
 
 require (
 	github.com/crosszan/modu v0.0.0-20260222081036-26bfbc1e6954
+	github.com/sahilm/fuzzy v0.1.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
 )
 
@@ -29,6 +30,7 @@ require (
 	github.com/jchv/go-winloader v0.0.0-20250406163304-c1995be93bd1 // indirect
 	github.com/kevinburke/ssh_config v1.4.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.3.0 // indirect
+	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/leaanthony/go-ansi-parser v1.6.1 // indirect
 	github.com/leaanthony/u v1.1.1 // indirect
 	github.com/lmittmann/tint v1.1.2 // indirect

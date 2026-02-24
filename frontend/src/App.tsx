@@ -145,7 +145,10 @@ const App: React.FC = () => {
       case 'open':
         launchCmd(cmd); break
       case 'reveal':
-        if (cmd.path) await CommandsService.OpenURL('file://' + (cmd.path ? cmd.path.split('/').slice(0, -1).join('/') : '')).catch(() => { })
+        if (cmd.path) await CommandsService.RevealInFinder(cmd.path).catch(() => { })
+        break
+      case 'quicklook':
+        if (cmd.path) await CommandsService.QuickLook(cmd.path).catch(() => { })
         break
       case 'copy-path':
         if (cmd.path) await navigator.clipboard.writeText(cmd.path).catch(() => { })

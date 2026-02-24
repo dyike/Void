@@ -15,6 +15,13 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 import * as $models from "./models.js";
 
 /**
+ * CopyToClipboard copies text to the macOS clipboard.
+ */
+export function CopyToClipboard(text: string): $CancellablePromise<void> {
+    return $Call.ByID(1159587333, text);
+}
+
+/**
  * ExecuteSystemCommand runs a built-in macOS system command by ID.
  */
 export function ExecuteSystemCommand(id: string): $CancellablePromise<void> {
@@ -52,6 +59,13 @@ export function OpenURL(url: string): $CancellablePromise<void> {
 }
 
 /**
+ * QuickLook opens Quick Look preview for a file.
+ */
+export function QuickLook(path: string): $CancellablePromise<void> {
+    return $Call.ByID(984248691, path);
+}
+
+/**
  * RecordUsage records that a command was used (for frecency).
  */
 export function RecordUsage(id: string): $CancellablePromise<void> {
@@ -68,7 +82,23 @@ export function RefreshCommands(): $CancellablePromise<$models.CommandInfo[]> {
 }
 
 /**
- * SearchFiles searches for files using Spotlight.
+ * RevealInFinder reveals a file in Finder (selects it).
+ */
+export function RevealInFinder(path: string): $CancellablePromise<void> {
+    return $Call.ByID(4070273935, path);
+}
+
+/**
+ * SearchFileContents searches inside file contents using grep (pure Go).
+ */
+export function SearchFileContents(query: string): $CancellablePromise<$models.CommandInfo[]> {
+    return $Call.ByID(3024931605, query).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
+/**
+ * SearchFiles searches for files by name using fuzzy matching (pure Go, no Spotlight).
  */
 export function SearchFiles(query: string): $CancellablePromise<$models.CommandInfo[]> {
     return $Call.ByID(370936336, query).then(($result: any) => {

@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/base64"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -12,6 +13,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/dyike/Void/internal/service/filesearch"
 	"github.com/dyike/Void/internal/service/frecency"
 )
 
@@ -114,6 +116,23 @@ func (s *Service) OpenSystemSettings(bundleID string) error {
 	return nil
 }
 
+// RevealInFinder reveals a file in Finder (selects it).
+func (s *Service) RevealInFinder(path string) error {
+	return exec.Command("open", "-R", path).Run()
+}
+
+// QuickLook opens Quick Look preview for a file.
+func (s *Service) QuickLook(path string) error {
+	return exec.Command("qlmanage", "-p", path).Start()
+}
+
+// CopyToClipboard copies text to the macOS clipboard.
+func (s *Service) CopyToClipboard(text string) error {
+	cmd := exec.Command("pbcopy")
+	cmd.Stdin = strings.NewReader(text)
+	return cmd.Run()
+}
+
 // ExecuteSystemCommand runs a built-in macOS system command by ID.
 func (s *Service) ExecuteSystemCommand(id string) error {
 	switch id {
@@ -162,43 +181,66 @@ func (s *Service) ExecuteSystemCommand(id string) error {
 	return nil
 }
 
-// SearchFiles searches for files using Spotlight.
+// SearchFiles searches for files by name using fuzzy matching (pure Go, no Spotlight).
 func (s *Service) SearchFiles(query string) ([]CommandInfo, error) {
 	if query == "" {
 		return nil, nil
 	}
-
-	out, err := exec.Command(
-		"mdfind",
-		"-onlyin", os.Getenv("HOME"),
-		"-name", query,
-		"-attr", "kMDItemPath",
-	).Output()
-	if err != nil {
-		return nil, err
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		log.Println("filesearch: HOME env is empty")
+		return nil, nil
 	}
-
-	var results []CommandInfo
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		name := filepath.Base(line)
-		results = append(results, CommandInfo{
-			ID:        "file-" + slugify(line),
-			Title:     name,
-			Subtitle:  filepath.Dir(line),
-			IconEmoji: fileEmoji(line),
+	log.Printf("filesearch: searching query=%q in %s", query, homeDir)
+	start := time.Now()
+	results := filesearch.SearchFiles(homeDir, query)
+	elapsed := time.Since(start)
+	log.Printf("filesearch: found %d results in %v", len(results), elapsed)
+	if len(results) > 0 {
+		log.Printf("filesearch: top result: %s (score=%d)", results[0].Path, results[0].Score)
+	}
+	var cmds []CommandInfo
+	for _, r := range results {
+		cmds = append(cmds, CommandInfo{
+			ID:        "file-" + slugify(r.Path),
+			Title:     r.Name,
+			Subtitle:  r.Dir,
+			IconEmoji: fileEmoji(r.Path),
 			Category:  "file",
-			Path:      line,
+			Path:      r.Path,
+			Score:     float64(r.Score),
 		})
-		if len(results) >= 20 {
-			break
-		}
 	}
-	return results, nil
+	return cmds, nil
+}
+
+// SearchFileContents searches inside file contents using grep (pure Go).
+func (s *Service) SearchFileContents(query string) ([]CommandInfo, error) {
+	if query == "" {
+		return nil, nil
+	}
+	homeDir := os.Getenv("HOME")
+	if homeDir == "" {
+		return nil, nil
+	}
+	results := filesearch.SearchFileContents(homeDir, query)
+	var cmds []CommandInfo
+	for _, r := range results {
+		subtitle := r.Dir
+		if r.LineNum > 0 {
+			subtitle = fmt.Sprintf("L%d: %s", r.LineNum, r.LineText)
+		}
+		cmds = append(cmds, CommandInfo{
+			ID:        "file-" + slugify(r.Path),
+			Title:     r.Name,
+			Subtitle:  subtitle,
+			IconEmoji: fileEmoji(r.Path),
+			Category:  "file",
+			Path:      r.Path,
+			Score:     float64(r.Score),
+		})
+	}
+	return cmds, nil
 }
 
 // ─── System Commands ───────────────────────────────────────────────────────

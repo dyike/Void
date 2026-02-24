@@ -452,26 +452,14 @@ type SnippetLookupFn func(prefix string) *string
 // StartSnippetExpand starts a goroutine that monitors typed characters
 // and expands snippet prefixes.
 func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() []string) {
-	log.Printf("snippet: StartSnippetExpand called, running=%v", running.Load())
 	go func() {
-		log.Println("snippet: goroutine started")
 		var lastBuf string
-		tick := 0
 		for running.Load() {
 			buf := C.GoString(C.getSnippetBuffer())
-			keyCount := int(C.getDebugKeyCount())
-			allEvents := int(C.getAllEventCount())
-
-			// Log debug info every ~2 seconds (40 * 50ms)
-			tick++
-			if tick%40 == 0 {
-				log.Printf("snippet: [debug] allEvents=%d keyCount=%d bufLen=%d buf=%q", allEvents, keyCount, len(buf), buf)
-			}
 
 			if buf != lastBuf && len(buf) > 0 {
 				lastBuf = buf
 				prefixes := getPrefixes()
-				log.Printf("snippet: buffer=%q prefixes=%v", buf, prefixes)
 				for _, prefix := range prefixes {
 					if strings.HasSuffix(buf, prefix) {
 						content := lookup(prefix)

@@ -1,73 +1,73 @@
 import React from 'react'
-import { X, Copy, ExternalLink, Clipboard, Sparkles } from 'lucide-react'
+import { X, Copy, ExternalLink, Clipboard, Sparkles, Eye } from 'lucide-react'
 
 export interface Action {
-    id: string
-    label: string
-    icon?: React.ReactNode
-    shortcut?: string
-    danger?: boolean
+  id: string
+  label: string
+  icon?: React.ReactNode
+  shortcut?: string
+  danger?: boolean
 }
 
 interface Props {
-    title: string
-    subtitle?: string
-    actions: Action[]
-    onAction: (id: string) => void
-    onClose: () => void
+  title: string
+  subtitle?: string
+  actions: Action[]
+  onAction: (id: string) => void
+  onClose: () => void
 }
 
 /** Action Panel overlay — shown on Cmd+K over the selected command */
 const ActionPanel: React.FC<Props> = ({ title, subtitle, actions, onAction, onClose }) => {
-    const handleKey = (e: React.KeyboardEvent) => {
-        if (e.key === 'Escape') { e.preventDefault(); onClose() }
-    }
+  const handleKey = (e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') { e.preventDefault(); onClose() }
+  }
 
-    return (
-        <div
-            className="action-panel-backdrop"
-            onClick={onClose}
-            onKeyDown={handleKey}
-        >
-            <div
-                className="action-panel"
-                onClick={e => e.stopPropagation()}
-                onKeyDown={handleKey}
-                tabIndex={-1}
-                autoFocus
+  return (
+    <div
+      className="action-panel-backdrop"
+      onClick={onClose}
+      onKeyDown={handleKey}
+    >
+      <div
+        className="action-panel"
+        onClick={e => e.stopPropagation()}
+        onKeyDown={handleKey}
+        tabIndex={-1}
+        autoFocus
+      >
+        {/* Header */}
+        <div className="action-panel-header">
+          <div>
+            <div className="action-panel-title">{title}</div>
+            {subtitle && <div className="action-panel-subtitle">{subtitle}</div>}
+          </div>
+          <button className="action-panel-close" onClick={onClose}>
+            <X size={14} />
+          </button>
+        </div>
+
+        {/* Actions */}
+        <div className="action-panel-list">
+          {actions.map(action => (
+            <button
+              key={action.id}
+              className={`action-panel-item${action.danger ? ' danger' : ''}`}
+              onClick={() => { onAction(action.id); onClose() }}
             >
-                {/* Header */}
-                <div className="action-panel-header">
-                    <div>
-                        <div className="action-panel-title">{title}</div>
-                        {subtitle && <div className="action-panel-subtitle">{subtitle}</div>}
-                    </div>
-                    <button className="action-panel-close" onClick={onClose}>
-                        <X size={14} />
-                    </button>
-                </div>
+              {action.icon && (
+                <span className="action-panel-item-icon">{action.icon}</span>
+              )}
+              <span className="action-panel-item-label">{action.label}</span>
+              {action.shortcut && (
+                <span className="action-panel-item-shortcut">{action.shortcut}</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
-                {/* Actions */}
-                <div className="action-panel-list">
-                    {actions.map(action => (
-                        <button
-                            key={action.id}
-                            className={`action-panel-item${action.danger ? ' danger' : ''}`}
-                            onClick={() => { onAction(action.id); onClose() }}
-                        >
-                            {action.icon && (
-                                <span className="action-panel-item-icon">{action.icon}</span>
-                            )}
-                            <span className="action-panel-item-label">{action.label}</span>
-                            {action.shortcut && (
-                                <span className="action-panel-item-shortcut">{action.shortcut}</span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-            </div>
-
-            <style>{`
+      <style>{`
         .action-panel-backdrop {
           position: fixed;
           inset: 0;
@@ -159,32 +159,33 @@ const ActionPanel: React.FC<Props> = ({ title, subtitle, actions, onAction, onCl
           font-family: -apple-system, monospace;
         }
       `}</style>
-        </div>
-    )
+    </div>
+  )
 }
 
 /** Build the default action list for a given command category */
 export function buildActions(cmd: { id: string; category: string; title: string; path?: string }): Action[] {
-    const actions: Action[] = []
+  const actions: Action[] = []
 
-    if (cmd.category === 'app') {
-        actions.push({ id: 'open', label: 'Open', icon: <ExternalLink size={14} />, shortcut: '↵' })
-        actions.push({ id: 'reveal', label: 'Reveal in Finder', icon: <ExternalLink size={14} /> })
-        actions.push({ id: 'copy-path', label: 'Copy Path', icon: <Copy size={14} /> })
-    } else if (cmd.category === 'file') {
-        actions.push({ id: 'open', label: 'Open', icon: <ExternalLink size={14} />, shortcut: '↵' })
-        actions.push({ id: 'reveal', label: 'Reveal in Finder', icon: <ExternalLink size={14} /> })
-        actions.push({ id: 'copy-path', label: 'Copy Path', icon: <Copy size={14} /> })
-    } else if (cmd.category === 'system') {
-        if (cmd.id === 'system-clipboard-manager') {
-            actions.push({ id: 'open', label: 'Open Clipboard History', icon: <Clipboard size={14} />, shortcut: '↵' })
-        } else if (cmd.id === 'system-ai-chat') {
-            actions.push({ id: 'open', label: 'Open AI Chat', icon: <Sparkles size={14} />, shortcut: '↵' })
-        }
-        actions.push({ id: 'copy-name', label: 'Copy Name', icon: <Copy size={14} /> })
+  if (cmd.category === 'app') {
+    actions.push({ id: 'open', label: 'Open', icon: <ExternalLink size={14} />, shortcut: '↵' })
+    actions.push({ id: 'reveal', label: 'Reveal in Finder', icon: <ExternalLink size={14} /> })
+    actions.push({ id: 'copy-path', label: 'Copy Path', icon: <Copy size={14} /> })
+  } else if (cmd.category === 'file') {
+    actions.push({ id: 'open', label: 'Open', icon: <ExternalLink size={14} />, shortcut: '↵' })
+    actions.push({ id: 'quicklook', label: 'Quick Look', icon: <Eye size={14} />, shortcut: '⌘Y' })
+    actions.push({ id: 'reveal', label: 'Reveal in Finder', icon: <ExternalLink size={14} /> })
+    actions.push({ id: 'copy-path', label: 'Copy Path', icon: <Copy size={14} /> })
+  } else if (cmd.category === 'system') {
+    if (cmd.id === 'system-clipboard-manager') {
+      actions.push({ id: 'open', label: 'Open Clipboard History', icon: <Clipboard size={14} />, shortcut: '↵' })
+    } else if (cmd.id === 'system-ai-chat') {
+      actions.push({ id: 'open', label: 'Open AI Chat', icon: <Sparkles size={14} />, shortcut: '↵' })
     }
+    actions.push({ id: 'copy-name', label: 'Copy Name', icon: <Copy size={14} /> })
+  }
 
-    return actions
+  return actions
 }
 
 export default ActionPanel
