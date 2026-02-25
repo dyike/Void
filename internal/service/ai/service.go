@@ -9,22 +9,31 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
-
 	"github.com/crosszan/modu/pkg/agent"
 	"github.com/crosszan/modu/pkg/coding_agent/tools"
 	"github.com/crosszan/modu/pkg/llm"
 	_ "github.com/crosszan/modu/pkg/llm/providers/ollama"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai_completions"
-
 	"github.com/dyike/Void/internal/service/settings"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 // AskResult holds the completed AI response.
 type AskResult struct {
 	Content string `json:"content"`
 	Error   string `json:"error,omitempty"`
+}
+
+// AIEvent represents a unified streaming event sent to the frontend.
+type AIEvent struct {
+	Type    string `json:"type"`              // "delta" | "tool_start" | "tool_end" | "action" | "turn" | "done"
+	Content string `json:"content,omitempty"` // delta text or action text
+	Name    string `json:"name,omitempty"`    // tool name
+	Args    string `json:"args,omitempty"`    // tool args JSON
+	Result  string `json:"result,omitempty"`  // tool result JSON
+	IsError bool   `json:"isError,omitempty"` // tool error flag
+	Turn    int    `json:"turn,omitempty"`    // turn number
 }
 
 // Service handles AI inference.
@@ -153,7 +162,7 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 	turnCount := 0
 	a := agent.NewAgent(agentOpts)
 
-	// Subscribe to streaming events and push to Wails frontend
+	// Subscribe to streaming events and push to Wails frontend via a single unified event
 	a.Subscribe(func(e agent.AgentEvent) {
 		app := application.Get()
 		if app == nil {
@@ -167,23 +176,32 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 				log.Printf("[AI] turn limit reached, aborting")
 				cancel()
 			}
+			app.Event.Emit("AIEvent", AIEvent{Type: "turn", Turn: turnCount})
 		case agent.EventTypeMessageUpdate:
 			if e.AssistantMessageEvent != nil && e.AssistantMessageEvent.Delta != "" {
 				log.Printf("[AI] delta: %q", e.AssistantMessageEvent.Delta)
-				app.Event.Emit("AgentUpdate", e.AssistantMessageEvent.Delta)
+				app.Event.Emit("AIEvent", AIEvent{Type: "delta", Content: e.AssistantMessageEvent.Delta})
 			}
 		case agent.EventTypeToolExecutionStart:
 			argsJSON, _ := json.Marshal(e.Args)
 			log.Printf("[AI] tool start: %s args=%s", e.ToolName, string(argsJSON))
-			app.Event.Emit("ToolCallStart", e.ToolName, string(argsJSON))
-			app.Event.Emit("AgentAction", fmt.Sprintf("Running: %s", e.ToolName))
+			app.Event.Emit("AIEvent", AIEvent{
+				Type: "tool_start",
+				Name: e.ToolName,
+				Args: string(argsJSON),
+			})
 		case agent.EventTypeToolExecutionEnd:
 			resultJSON, _ := json.Marshal(e.Result)
 			log.Printf("[AI] tool end: %s isError=%v", e.ToolName, e.IsError)
-			app.Event.Emit("ToolCallEnd", e.ToolName, string(resultJSON), e.IsError)
-			app.Event.Emit("AgentAction", "")
+			app.Event.Emit("AIEvent", AIEvent{
+				Type:    "tool_end",
+				Name:    e.ToolName,
+				Result:  string(resultJSON),
+				IsError: e.IsError,
+			})
 		case agent.EventTypeAgentEnd:
 			log.Printf("[AI] agent finished")
+			app.Event.Emit("AIEvent", AIEvent{Type: "done"})
 		}
 	})
 

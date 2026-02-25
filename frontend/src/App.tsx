@@ -8,6 +8,9 @@ import AiChatView from './AiChatView'
 import SnippetsView from './SnippetsView'
 import ActionPanel, { buildActions } from './ActionPanel'
 import ScriptCommandsView from './ScriptCommandsView'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -233,9 +236,9 @@ const App: React.FC = () => {
     const sys = SYSTEM_ICONS[cmd.id]
     if (sys) return sys
     if (cmd.iconDataUrl) return (
-      <img src={cmd.iconDataUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 6 }} />
+      <img src={cmd.iconDataUrl} alt="" className="h-full w-full rounded-md object-cover" />
     )
-    return <span style={{ fontSize: 17 }}>{cmd.iconEmoji || '📦'}</span>
+    return <span className="text-[17px]">{cmd.iconEmoji || '📦'}</span>
   }
 
   // ─── Sub-views ─────────────────────────────────────────────────────────
@@ -243,14 +246,19 @@ const App: React.FC = () => {
     const onBack = () => { setView('launcher'); setQuery('') }
     const title = { clipboard: 'Clipboard History', ai: 'AI Chat', snippets: 'Snippets', scripts: 'Script Commands' }[view]
     return (
-      <div className="launcher" onKeyDown={handleKeyDown}>
-        <div className="search-bar">
-          <button className="search-clear" onClick={onBack} style={{ color: 'rgba(255,255,255,0.45)' }}>
+      <div className="flex h-full w-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[#171722]/85 text-white/90 backdrop-blur-3xl" onKeyDown={handleKeyDown}>
+        <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-white/45 hover:text-white/80"
+            onClick={onBack}
+          >
             <ArrowLeft size={16} />
-          </button>
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'rgba(255,255,255,0.7)' }}>{title}</span>
+          </Button>
+          <span className="text-sm font-medium text-white/70">{title}</span>
         </div>
-        <div className="view-overlay">
+        <div className="flex min-h-0 flex-1 flex-col">
           {view === 'clipboard' && <ClipboardManager onClose={onBack} />}
           {view === 'ai' && <AiChatView />}
           {view === 'snippets' && <SnippetsView />}
@@ -265,50 +273,63 @@ const App: React.FC = () => {
   let flatIdx = 0
 
   return (
-    <div className="launcher" onKeyDown={handleKeyDown}>
+    <div
+      className="flex h-full w-full flex-col overflow-hidden rounded-[14px] border border-white/10 bg-[#171722]/85 text-white/90 backdrop-blur-3xl"
+      onKeyDown={handleKeyDown}
+      onMouseDown={() => inputRef.current?.focus()}
+    >
       {/* Search bar */}
-      <div className="search-bar">
-        <Search size={16} className="search-icon" />
-        <input
+      <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+        <Search size={16} className="text-white/40" />
+        <Input
           ref={inputRef}
-          className="search-input"
+          className="h-8 border-0 bg-transparent px-0 text-[15px] font-medium text-white/95 placeholder:text-white/35 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
           placeholder="Search apps, files, snippets…"
           value={query}
           onChange={e => setQuery(e.target.value)}
           autoFocus
         />
         {(loading || fileSearching) && (
-          <Loader2 size={14} style={{ color: 'rgba(255,255,255,0.3)', animation: 'spin 1s linear infinite', flexShrink: 0 }} />
+          <Loader2 size={14} className="shrink-0 animate-spin text-white/35" />
         )}
         {query && (
-          <button className="search-clear" onClick={() => setQuery('')}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-white/40 hover:text-white/80"
+            onClick={() => setQuery('')}
+          >
             <X size={14} />
-          </button>
+          </Button>
         )}
       </div>
 
       {/* Calculator result bar */}
       {calcResult?.isValid && (
         <div
-          className="calc-bar"
+          className="flex shrink-0 cursor-pointer items-center gap-2 border-b border-indigo-400/20 bg-indigo-500/15 px-4 py-2 transition hover:bg-indigo-500/25"
           onClick={copyCalcResult}
           title="Click to copy"
         >
-          <span className="calc-expr">{calcResult.input}</span>
-          <span className="calc-eq">=</span>
-          <span className="calc-result">{calcResult.result}</span>
-          <span className="calc-copy-hint">↵ copy</span>
+          <span className="text-xs text-white/45">{calcResult.input}</span>
+          <span className="text-xs text-white/35">=</span>
+          <span className="flex-1 font-mono text-[15px] font-semibold text-indigo-200/95">{calcResult.result}</span>
+          <span className="text-[11px] text-white/30">↵ copy</span>
         </div>
       )}
 
       {/* Command list */}
-      <div className="command-list">
+      <div className="flex-1 overflow-y-auto p-2">
         {flat.length === 0 && !loading ? (
-          <div className="empty-state"><span>No results for "{query}"</span></div>
+          <div className="flex flex-col items-center justify-center gap-2 px-8 py-10 text-sm text-white/40">
+            <span>No results for "{query}"</span>
+          </div>
         ) : (
           grouped.map(group => (
             <div key={group.label}>
-              <div className="section-label">{group.label}</div>
+              <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-white/35">
+                {group.label}
+              </div>
               {group.items.map(cmd => {
                 const idx = flatIdx++
                 const sel = idx === selectedIndex
@@ -316,23 +337,28 @@ const App: React.FC = () => {
                   <div
                     key={cmd.id}
                     ref={el => { itemRefs.current[idx] = el }}
-                    className={`command-item${sel ? ' selected' : ''}`}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-3 py-2 transition",
+                      sel ? "border-indigo-400/40 bg-indigo-500/25" : "hover:bg-white/10"
+                    )}
                     onClick={() => launchCmd(cmd)}
                     onMouseEnter={() => setSelectedIndex(idx)}
                   >
                     <div
-                      className="command-icon"
-                      style={SYSTEM_ICONS[cmd.id] ? { background: 'rgba(99,102,241,0.15)' } : undefined}
+                      className={cn(
+                        "flex h-7 w-7 items-center justify-center rounded-md text-[17px]",
+                        SYSTEM_ICONS[cmd.id] ? "bg-indigo-500/20 text-indigo-100" : "bg-white/10"
+                      )}
                     >
                       {renderIcon(cmd)}
                     </div>
-                    <div className="command-text">
-                      <div className="command-title">{cmd.title}</div>
-                      {cmd.subtitle && <div className="command-subtitle">{cmd.subtitle}</div>}
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate text-[14px] font-medium text-white/95">{cmd.title}</div>
+                      {cmd.subtitle && <div className="truncate text-[11px] text-white/45">{cmd.subtitle}</div>}
                     </div>
                     {sel && (
-                      <span className="command-hint" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span title="Actions (⌘K)" style={{ cursor: 'pointer', opacity: 0.55 }}>⌘K</span>
+                      <span className="flex items-center gap-2 text-[11px] text-white/45">
+                        <span title="Actions (⌘K)" className="cursor-pointer opacity-60">⌘K</span>
                         <span>↵</span>
                       </span>
                     )}
@@ -345,21 +371,39 @@ const App: React.FC = () => {
       </div>
 
       {/* Footer */}
-      <div className="footer">
-        <button className="footer-settings-btn" onClick={() => SettingsService.OpenSettingsWindow()} title="Settings">
+      <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-7 w-7 text-white/50 hover:text-white/80"
+          onClick={() => SettingsService.OpenSettingsWindow()}
+          title="Settings"
+        >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
           </svg>
-        </button>
-        <div className="footer-actions">
+        </Button>
+        <div className="flex items-center gap-2">
           {selectedCmd && (
             <>
-              <button className="footer-btn" onClick={() => setShowActions(true)} title="Actions">
-                Actions <kbd>⌘K</kbd>
-              </button>
-              <button className="footer-btn primary" onClick={() => launchCmd(selectedCmd)}>
-                Open <kbd>↵</kbd>
-              </button>
+              <Button
+                variant="secondary"
+                size="sm"
+                className="bg-white/10 text-white/70 hover:bg-white/20"
+                onClick={() => setShowActions(true)}
+                title="Actions"
+              >
+                Actions
+                <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-white/10 px-1 text-[11px] text-white/70">⌘K</kbd>
+              </Button>
+              <Button
+                size="sm"
+                className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                onClick={() => launchCmd(selectedCmd)}
+              >
+                Open
+                <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd>
+              </Button>
             </>
           )}
         </div>
@@ -376,23 +420,6 @@ const App: React.FC = () => {
         />
       )}
 
-      <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .calc-bar {
-          display: flex; align-items: center; gap: 8px;
-          padding: 8px 18px;
-          background: rgba(99,102,241,0.12);
-          border-bottom: 1px solid rgba(99,102,241,0.18);
-          cursor: pointer;
-          transition: background .12s;
-          flex-shrink: 0;
-        }
-        .calc-bar:hover { background: rgba(99,102,241,0.20); }
-        .calc-expr { font-size: 13px; color: rgba(255,255,255,0.45); font-family: monospace; }
-        .calc-eq   { font-size: 13px; color: rgba(255,255,255,0.35); }
-        .calc-result { font-size: 15px; font-weight: 600; color: rgba(180,183,255,0.95); font-family: monospace; flex: 1; }
-        .calc-copy-hint { font-size: 11px; color: rgba(255,255,255,0.25); }
-      `}</style>
     </div>
   )
 }

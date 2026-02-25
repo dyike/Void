@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Edit2, Trash2, Copy, Search, X } from 'lucide-react'
 import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippets/service.js'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 interface Snippet {
     id: string
@@ -94,92 +97,99 @@ const SnippetsView: React.FC = () => {
 
     if (editing) {
         return (
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: 20, gap: 14 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>
+            <div className="flex flex-1 flex-col gap-3 px-5 py-4">
+                <div className="text-sm font-semibold text-white/80">
                     {selected ? 'Edit Snippet' : 'New Snippet'}
                 </div>
-                <input
-                    className="settings-input"
-                    style={{ width: '100%' }}
+                <Input
+                    className="h-9 border-white/10 bg-white/5 text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
                     placeholder="Name"
                     value={form.name}
                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                     autoFocus
                 />
-                <input
-                    className="settings-input"
-                    style={{ width: '100%' }}
+                <Input
+                    className="h-9 border-white/10 bg-white/5 text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
                     placeholder="Prefix (e.g. ;addr)"
                     value={form.prefix}
                     onChange={e => setForm(f => ({ ...f, prefix: e.target.value }))}
                 />
                 <textarea
-                    className="settings-input"
-                    style={{ width: '100%', minHeight: 120, resize: 'vertical', lineHeight: 1.6 }}
+                    className="min-h-[120px] w-full resize-y rounded-md border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/90 outline-none placeholder:text-white/35 focus-visible:ring-1 focus-visible:ring-indigo-400/30"
                     placeholder="Snippet content…"
                     value={form.content}
                     onChange={e => setForm(f => ({ ...f, content: e.target.value }))}
                 />
-                <input
-                    className="settings-input"
-                    style={{ width: '100%' }}
+                <Input
+                    className="h-9 border-white/10 bg-white/5 text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
                     placeholder="Tags (comma-separated)"
                     value={form.tags}
                     onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
                 />
-                <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="settings-save-btn" onClick={save}>Save</button>
-                    <button
-                        className="settings-save-btn"
-                        style={{ background: 'rgba(255,255,255,0.07)', color: 'rgba(255,255,255,0.6)' }}
+                <div className="flex items-center gap-2">
+                    <Button className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45" onClick={save}>
+                        Save
+                    </Button>
+                    <Button
+                        variant="secondary"
+                        className="bg-white/10 text-white/70 hover:bg-white/20"
                         onClick={() => setEditing(false)}
                     >
                         Cancel
-                    </button>
+                    </Button>
                 </div>
             </div>
         )
     }
 
     return (
-        <div className="view-overlay" style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Search */}
-            <div className="search-bar">
-                <Search size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
-                <input
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+                <Search size={14} className="text-white/40" />
+                <Input
                     ref={searchRef}
-                    className="search-input"
+                    className="h-8 border-0 bg-transparent px-0 text-[14px] text-white/90 placeholder:text-white/35 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     placeholder="Search snippets…"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                 />
                 {query && (
-                    <button className="search-clear" onClick={() => setQuery('')}><X size={13} /></button>
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-white/40 hover:text-white/80"
+                        onClick={() => setQuery('')}
+                    >
+                        <X size={13} />
+                    </Button>
                 )}
-                <button
-                    className="footer-btn primary"
-                    style={{ flexShrink: 0 }}
+                <Button
+                    size="sm"
+                    className="ml-auto bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
                     onClick={startCreate}
                 >
-                    <Plus size={13} /> New
-                </button>
+                    <Plus size={13} />
+                    New
+                </Button>
             </div>
 
-            {/* List + Preview */}
-            <div className="clipboard-split" style={{ flex: 1, minHeight: 0 }}>
-                <div className="clipboard-list">
+            <div className="flex min-h-0 flex-1">
+                <div className="w-[40%] overflow-y-auto border-r border-white/10 p-2">
                     {snippets.length === 0
-                        ? <div className="empty-state" style={{ padding: 20 }}>No snippets yet</div>
+                        ? <div className="flex items-center justify-center px-4 py-8 text-xs text-white/40">No snippets yet</div>
                         : snippets.map(sn => (
                             <div
                                 key={sn.id}
-                                className={`clip-item${selected?.id === sn.id ? ' selected' : ''}`}
+                                className={cn(
+                                    "flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-2 text-sm transition",
+                                    selected?.id === sn.id ? "border-indigo-400/40 bg-indigo-500/20" : "hover:bg-white/10"
+                                )}
                                 onClick={() => setSelected(sn)}
                                 onDoubleClick={() => copy(sn)}
                             >
-                                <span className="clip-text">
+                                <span className="truncate text-[13px] text-white/80">
                                     {sn.prefix && (
-                                        <span style={{ marginRight: 5, opacity: 0.5, fontSize: 11, fontFamily: 'monospace' }}>
+                                        <span className="mr-1.5 font-mono text-[11px] text-white/40">
                                             {sn.prefix}
                                         </span>
                                     )}
@@ -190,52 +200,69 @@ const SnippetsView: React.FC = () => {
                     }
                 </div>
 
-                <div className="clipboard-preview">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                     {selected
                         ? <>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'rgba(255,255,255,0.85)', marginBottom: 8 }}>
+                            <div className="text-sm font-semibold text-white/85">
                                 {selected.name}
                             </div>
                             {selected.prefix && (
-                                <div style={{ fontSize: 12, fontFamily: 'monospace', color: 'rgba(255,255,255,0.4)', marginBottom: 10 }}>
+                                <div className="font-mono text-xs text-white/40">
                                     prefix: {selected.prefix}
                                 </div>
                             )}
-                            <pre className="preview-content">{selected.content}</pre>
+                            <pre className="whitespace-pre-wrap break-all rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                                {selected.content}
+                            </pre>
                             {selected.tags?.length > 0 && (
-                                <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                                <div className="mt-1 flex flex-wrap gap-1.5">
                                     {selected.tags.map(t => (
-                                        <span key={t} style={{ fontSize: 11, padding: '2px 8px', borderRadius: 4, background: 'rgba(99,102,241,0.18)', color: 'rgba(180,183,255,0.7)' }}>
+                                        <span
+                                            key={t}
+                                            className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[11px] text-indigo-200/80"
+                                        >
                                             {t}
                                         </span>
                                     ))}
                                 </div>
                             )}
                         </>
-                        : <div className="empty-state">Select a snippet to preview</div>
+                        : <div className="flex flex-1 items-center justify-center text-xs text-white/40">Select a snippet to preview</div>
                     }
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="footer">
-                <span className="footer-left">{snippets.length} snippets</span>
-                <div className="footer-actions">
+            <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
+                <span className="text-xs text-white/35">{snippets.length} snippets</span>
+                <div className="flex items-center gap-2">
                     {selected && (
                         <>
-                            <button className="footer-btn" onClick={() => startEdit(selected)}>
-                                <Edit2 size={13} /> Edit
-                            </button>
-                            <button
-                                className="footer-btn"
-                                style={{ color: 'rgba(248,113,113,0.85)' }}
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="bg-white/10 text-white/70 hover:bg-white/20"
+                                onClick={() => startEdit(selected)}
+                            >
+                                <Edit2 size={13} />
+                                Edit
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="bg-white/10 text-red-300 hover:bg-white/20"
                                 onClick={() => deleteSnippet(selected)}
                             >
                                 <Trash2 size={13} />
-                            </button>
-                            <button className="footer-btn primary" onClick={() => copy(selected)}>
-                                <Copy size={13} /> {copied ? 'Copied!' : 'Copy'} <kbd>↵</kbd>
-                            </button>
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                                onClick={() => copy(selected)}
+                            >
+                                <Copy size={13} />
+                                {copied ? 'Copied!' : 'Copy'}
+                                <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd>
+                            </Button>
                         </>
                     )}
                 </div>

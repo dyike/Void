@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { FileText, Link, Image as ImageIcon, Trash2, Copy, Clipboard } from 'lucide-react'
 import * as ClipboardService from '../bindings/github.com/dyike/Void/internal/service/clipboard/service.js'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 interface ClipboardItem {
     id: string
@@ -107,24 +110,27 @@ const ClipboardManager: React.FC<Props> = ({ onClose }) => {
     }
 
     return (
-        <div className="view-overlay" onKeyDown={handleKeyDown}>
-            {/* Search */}
-            <div className="search-bar" style={{ borderTop: 'none' }}>
-                <input
+        <div className="flex min-h-0 flex-1 flex-col" onKeyDown={handleKeyDown}>
+            <div className="border-b border-white/10 px-4 py-3">
+                <Input
                     ref={inputRef}
-                    className="search-input"
+                    className="h-8 border-white/10 bg-white/5 text-[14px] text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
                     placeholder="Search clipboard history…"
                     value={searchQuery}
                     onChange={e => setSearchQuery(e.target.value)}
                 />
             </div>
 
-            {/* Filter tabs */}
-            <div className="filter-tabs">
+            <div className="flex items-center gap-2 border-b border-white/10 px-3 py-2">
                 {FILTER_TYPES.map(t => (
                     <button
                         key={t}
-                        className={`filter-tab${filter === t ? ' active' : ''}`}
+                        className={cn(
+                            "rounded-md px-2.5 py-1 text-xs font-medium transition",
+                            filter === t
+                                ? "bg-white/15 text-white/90"
+                                : "text-white/40 hover:bg-white/5 hover:text-white/70"
+                        )}
                         onClick={() => setFilter(t)}
                     >
                         {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -132,67 +138,88 @@ const ClipboardManager: React.FC<Props> = ({ onClose }) => {
                 ))}
             </div>
 
-            {/* Split */}
-            <div className="clipboard-split">
-                {/* List */}
-                <div className="clipboard-list">
+            <div className="flex min-h-0 flex-1">
+                <div className="w-[40%] overflow-y-auto border-r border-white/10 p-2">
                     {loading ? (
-                        <div className="loading-spinner">Loading…</div>
+                        <div className="flex items-center justify-center px-4 py-8 text-xs text-white/40">Loading…</div>
                     ) : filtered.length === 0 ? (
-                        <div className="empty-state" style={{ padding: 20 }}>No items</div>
+                        <div className="flex items-center justify-center px-4 py-8 text-xs text-white/40">No items</div>
                     ) : (
                         filtered.map((item, idx) => (
                             <div
                                 key={item.id}
-                                className={`clip-item${idx === selectedIndex ? ' selected' : ''}`}
+                                className={cn(
+                                    "flex cursor-pointer items-start gap-2 rounded-md border border-transparent px-2 py-2 text-sm transition",
+                                    idx === selectedIndex ? "border-indigo-400/40 bg-indigo-500/20" : "hover:bg-white/10"
+                                )}
                                 onClick={() => setSelectedIndex(idx)}
                                 onDoubleClick={() => pasteItem(item)}
                             >
-                                <span className="clip-icon">{typeIcon(item.type)}</span>
-                                <span className="clip-text">{item.preview || item.content}</span>
+                                <span className="mt-0.5 text-white/40">{typeIcon(item.type)}</span>
+                                <span className="truncate text-[13px] text-white/80">{item.preview || item.content}</span>
                             </div>
                         ))
                     )}
                 </div>
 
-                {/* Preview */}
-                <div className="clipboard-preview">
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                     {selectedItem ? (
                         <>
                             {selectedItem.type === 'image' ? (
                                 <img
                                     src={`file://${selectedItem.content}`}
                                     alt="Clipboard"
-                                    style={{ width: '100%', borderRadius: 8, border: '1px solid rgba(255,255,255,0.08)' }}
+                                    className="w-full rounded-lg border border-white/10"
                                 />
                             ) : (
-                                <pre className="preview-content">{selectedItem.content}</pre>
+                                <pre className="whitespace-pre-wrap break-all rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                                    {selectedItem.content}
+                                </pre>
                             )}
-                            <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid rgba(255,255,255,0.06)', fontSize: 12, color: 'rgba(255,255,255,0.35)' }}>
+                            <div className="border-t border-white/10 pt-2 text-xs text-white/40">
                                 {formatDate(selectedItem.timestamp)}
                             </div>
                         </>
                     ) : (
-                        <div className="empty-state">Select an item to preview</div>
+                        <div className="flex flex-1 items-center justify-center text-xs text-white/40">Select an item to preview</div>
                     )}
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="footer">
-                <span className="footer-left">{filtered.length} items</span>
-                <div className="footer-actions">
+            <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
+                <span className="text-xs text-white/35">{filtered.length} items</span>
+                <div className="flex items-center gap-2">
                     {selectedItem && (
                         <>
-                            <button className="footer-btn" onClick={() => copyItem()} title="Copy">
-                                <Copy size={13} /> Copy <kbd>⌘↵</kbd>
-                            </button>
-                            <button className="footer-btn" style={{ color: 'rgba(248,113,113,0.85)' }} onClick={() => deleteItem()} title="Delete">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="bg-white/10 text-white/70 hover:bg-white/20"
+                                onClick={() => copyItem()}
+                                title="Copy"
+                            >
+                                <Copy size={13} />
+                                Copy
+                                <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-white/10 px-1 text-[11px] text-white/70">⌘↵</kbd>
+                            </Button>
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="bg-white/10 text-red-300 hover:bg-white/20"
+                                onClick={() => deleteItem()}
+                                title="Delete"
+                            >
                                 <Trash2 size={13} />
-                            </button>
-                            <button className="footer-btn primary" onClick={() => pasteItem()}>
-                                <Clipboard size={13} /> Paste <kbd>↵</kbd>
-                            </button>
+                            </Button>
+                            <Button
+                                size="sm"
+                                className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                                onClick={() => pasteItem()}
+                            >
+                                <Clipboard size={13} />
+                                Paste
+                                <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd>
+                            </Button>
                         </>
                     )}
                 </div>

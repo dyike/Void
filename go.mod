@@ -3,7 +3,7 @@ module github.com/dyike/Void
 go 1.25
 
 require (
-	github.com/crosszan/modu v0.0.1
+	github.com/crosszan/modu v0.0.2
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.72
 )
@@ -51,5 +51,3 @@ require (
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
-
-replace github.com/crosszan/modu => /Users/ityike/Code/go/src/github.com/crosszan/modu

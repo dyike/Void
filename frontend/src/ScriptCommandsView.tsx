@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Play, RefreshCw, FolderOpen, Search, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
 import * as ScriptsService from '../bindings/github.com/dyike/Void/internal/service/scripts/service.js'
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { cn } from "@/lib/utils"
 
 interface Argument {
     name: string
@@ -81,77 +84,97 @@ const ScriptCommandsView: React.FC = () => {
     const refresh = () => { ScriptsService.RefreshScriptCommands(); load() }
 
     return (
-        <div className="view-overlay" style={{ display: 'flex', flexDirection: 'column' }}>
-            {/* Search + toolbar */}
-            <div className="search-bar">
-                <Search size={14} style={{ color: 'rgba(255,255,255,0.35)', flexShrink: 0 }} />
-                <input
+        <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
+                <Search size={14} className="text-white/40" />
+                <Input
                     ref={searchRef}
-                    className="search-input"
+                    className="h-8 border-0 bg-transparent px-0 text-[14px] text-white/90 placeholder:text-white/35 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     placeholder="Search script commands…"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
                 />
-                {query && <button className="search-clear" onClick={() => setQuery('')}><X size={13} /></button>}
-                <button className="footer-btn" onClick={refresh} title="Refresh"><RefreshCw size={13} /></button>
-                <button className="footer-btn" onClick={openDir} title="Open scripts folder"><FolderOpen size={13} /></button>
+                {query && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 text-white/40 hover:text-white/80"
+                        onClick={() => setQuery('')}
+                    >
+                        <X size={13} />
+                    </Button>
+                )}
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    className="ml-auto bg-white/10 text-white/70 hover:bg-white/20"
+                    onClick={refresh}
+                    title="Refresh"
+                >
+                    <RefreshCw size={13} />
+                </Button>
+                <Button
+                    variant="secondary"
+                    size="sm"
+                    className="bg-white/10 text-white/70 hover:bg-white/20"
+                    onClick={openDir}
+                    title="Open scripts folder"
+                >
+                    <FolderOpen size={13} />
+                </Button>
             </div>
 
-            {/* Split: list + detail */}
-            <div className="clipboard-split" style={{ flex: 1, minHeight: 0 }}>
-                {/* Left: command list */}
-                <div className="clipboard-list">
+            <div className="flex min-h-0 flex-1">
+                <div className="w-[40%] overflow-y-auto border-r border-white/10 p-2">
                     {filtered.length === 0
-                        ? <div className="empty-state" style={{ padding: 20, fontSize: 12 }}>
-                            No scripts found.<br />
-                            <span style={{ opacity: 0.5 }}>Add .sh scripts to the scripts folder.</span>
+                        ? <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-xs text-white/40">
+                            <span>No scripts found.</span>
+                            <span className="text-white/30">Add .sh scripts to the scripts folder.</span>
                         </div>
                         : filtered.map(s => (
                             <div
                                 key={s.id}
-                                className={`clip-item${selected?.id === s.id ? ' selected' : ''}`}
+                                className={cn(
+                                    "flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-2 text-sm transition",
+                                    selected?.id === s.id ? "border-indigo-400/40 bg-indigo-500/20" : "hover:bg-white/10"
+                                )}
                                 onClick={() => selectScript(s)}
                                 onDoubleClick={() => run(s)}
                             >
-                                <span className="clip-text">
-                                    <span style={{ marginRight: 6 }}>{s.iconEmoji}</span>
-                                    {s.title}
-                                </span>
+                                <span className="text-[13px]">{s.iconEmoji}</span>
+                                <span className="truncate text-[13px] text-white/80">{s.title}</span>
                                 {s.packageName && (
-                                    <span style={{ fontSize: 10, opacity: 0.4, marginLeft: 4 }}>{s.packageName}</span>
+                                    <span className="ml-1 text-[10px] text-white/35">{s.packageName}</span>
                                 )}
                             </div>
                         ))
                     }
                 </div>
 
-                {/* Right: detail + output */}
-                <div className="clipboard-preview" style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                     {selected
                         ? <>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: 'rgba(255,255,255,0.85)' }}>
+                            <div className="text-sm font-semibold text-white/85">
                                 {selected.iconEmoji} {selected.title}
                             </div>
                             {selected.description && (
-                                <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.45)', lineHeight: 1.5 }}>
+                                <div className="text-xs text-white/50">
                                     {selected.description}
                                 </div>
                             )}
-                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.3)', fontFamily: 'monospace' }}>
+                            <div className="font-mono text-[11px] text-white/35">
                                 mode: {selected.mode}
                             </div>
 
-                            {/* Arguments */}
                             {selected.arguments && selected.arguments.length > 0 && (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                <div className="flex flex-col gap-2">
                                     {selected.arguments.map(arg => (
                                         <div key={arg.name}>
-                                            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.45)', marginBottom: 3 }}>
+                                            <div className="mb-1 text-[11px] text-white/50">
                                                 {arg.name}{arg.required ? ' *' : ''}
                                             </div>
-                                            <input
-                                                className="settings-input"
-                                                style={{ width: '100%' }}
+                                            <Input
+                                                className="h-8 border-white/10 bg-white/5 text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
                                                 type={arg.type === 'password' ? 'password' : 'text'}
                                                 placeholder={arg.placeholder || arg.name}
                                                 value={args[arg.name] || ''}
@@ -162,53 +185,53 @@ const ScriptCommandsView: React.FC = () => {
                                 </div>
                             )}
 
-                            <button
-                                className="footer-btn primary"
-                                style={{ alignSelf: 'flex-start', padding: '7px 16px' }}
+                            <Button
+                                size="sm"
+                                className="w-fit bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
                                 onClick={() => run(selected)}
                                 disabled={status === 'running'}
                             >
                                 {status === 'running'
-                                    ? <><Loader2 size={13} style={{ animation: 'spin 1s linear infinite' }} /> Running…</>
-                                    : <><Play size={13} /> Run <kbd>↵</kbd></>
+                                    ? <><Loader2 size={13} className="animate-spin" /> Running…</>
+                                    : <><Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd></>
                                 }
-                            </button>
+                            </Button>
 
-                            {/* Result */}
                             {result && (
-                                <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+                                <div className="flex min-h-0 flex-1 flex-col gap-2">
+                                    <div className="flex items-center gap-2 text-xs">
                                         {status === 'success'
-                                            ? <><CheckCircle size={13} style={{ color: 'rgba(52,211,153,0.8)' }} /><span style={{ color: 'rgba(52,211,153,0.8)' }}>Exit 0</span></>
-                                            : <><AlertCircle size={13} style={{ color: 'rgba(248,113,113,0.8)' }} /><span style={{ color: 'rgba(248,113,113,0.8)' }}>Exit {result.exitCode}</span></>
+                                            ? <><CheckCircle size={13} className="text-emerald-400" /><span className="text-emerald-400">Exit 0</span></>
+                                            : <><AlertCircle size={13} className="text-red-400" /><span className="text-red-400">Exit {result.exitCode}</span></>
                                         }
                                     </div>
                                     {result.output && (
-                                        <pre className="preview-content" style={{ flex: 1, minHeight: 0, overflowY: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+                                        <pre className="flex-1 whitespace-pre-wrap break-all rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/80">
                                             {result.output}
                                         </pre>
                                     )}
                                 </div>
                             )}
                         </>
-                        : <div className="empty-state">Select a script to run</div>
+                        : <div className="flex flex-1 items-center justify-center text-xs text-white/40">Select a script to run</div>
                     }
                 </div>
             </div>
 
-            {/* Footer */}
-            <div className="footer">
-                <span className="footer-left">{filtered.length} scripts</span>
-                <div className="footer-actions">
+            <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
+                <span className="text-xs text-white/35">{filtered.length} scripts</span>
+                <div className="flex items-center gap-2">
                     {selected && status !== 'running' && (
-                        <button className="footer-btn primary" onClick={() => run(selected)}>
-                            <Play size={13} /> Run <kbd>↵</kbd>
-                        </button>
+                        <Button
+                            size="sm"
+                            className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                            onClick={() => run(selected)}
+                        >
+                            <Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd>
+                        </Button>
                     )}
                 </div>
             </div>
-
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
         </div>
     )
 }

@@ -1,5 +1,7 @@
 import React from 'react'
 import { X, Copy, ExternalLink, Clipboard, Sparkles, Eye } from 'lucide-react'
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 export interface Action {
   id: string
@@ -25,140 +27,53 @@ const ActionPanel: React.FC<Props> = ({ title, subtitle, actions, onAction, onCl
 
   return (
     <div
-      className="action-panel-backdrop"
+      className="fixed inset-0 z-[100] flex items-end bg-black/30"
       onClick={onClose}
       onKeyDown={handleKey}
     >
       <div
-        className="action-panel"
+        className="w-full rounded-b-[14px] border-t border-white/10 bg-[#14141a]/95 p-2 backdrop-blur-3xl"
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKey}
         tabIndex={-1}
         autoFocus
       >
-        {/* Header */}
-        <div className="action-panel-header">
+        <div className="flex items-center justify-between border-b border-white/10 px-2 pb-2">
           <div>
-            <div className="action-panel-title">{title}</div>
-            {subtitle && <div className="action-panel-subtitle">{subtitle}</div>}
+            <div className="text-sm font-semibold text-white/85">{title}</div>
+            {subtitle && <div className="text-[11px] text-white/40">{subtitle}</div>}
           </div>
-          <button className="action-panel-close" onClick={onClose}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-white/40 hover:text-white/70"
+            onClick={onClose}
+          >
             <X size={14} />
-          </button>
+          </Button>
         </div>
 
-        {/* Actions */}
-        <div className="action-panel-list">
+        <div className="flex flex-col gap-1 pt-2">
           {actions.map(action => (
             <button
               key={action.id}
-              className={`action-panel-item${action.danger ? ' danger' : ''}`}
+              className={cn(
+                "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-white/80 transition hover:bg-white/7",
+                action.danger && "text-red-300 hover:bg-red-500/10"
+              )}
               onClick={() => { onAction(action.id); onClose() }}
             >
               {action.icon && (
-                <span className="action-panel-item-icon">{action.icon}</span>
+                <span className="flex text-white/40">{action.icon}</span>
               )}
-              <span className="action-panel-item-label">{action.label}</span>
+              <span className="flex-1 text-left">{action.label}</span>
               {action.shortcut && (
-                <span className="action-panel-item-shortcut">{action.shortcut}</span>
+                <span className="text-[11px] text-white/35">{action.shortcut}</span>
               )}
             </button>
           ))}
         </div>
       </div>
-
-      <style>{`
-        .action-panel-backdrop {
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,0.3);
-          display: flex;
-          align-items: flex-end;
-          z-index: 100;
-          animation: panel-backdrop-in .12s ease;
-        }
-        @keyframes panel-backdrop-in {
-          from { opacity: 0 }
-          to   { opacity: 1 }
-        }
-
-        .action-panel {
-          width: 100%;
-          background: rgba(20, 20, 26, 0.96);
-          backdrop-filter: blur(40px);
-          -webkit-backdrop-filter: blur(40px);
-          border-top: 1px solid rgba(255,255,255,0.09);
-          border-radius: 0 0 14px 14px;
-          padding: 6px;
-          animation: panel-slide-in .18s cubic-bezier(0.23,1,0.32,1);
-        }
-        @keyframes panel-slide-in {
-          from { transform: translateY(100%); opacity: 0 }
-          to   { transform: translateY(0);    opacity: 1 }
-        }
-
-        .action-panel-header {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 8px 10px 10px;
-          border-bottom: 1px solid rgba(255,255,255,0.06);
-          margin-bottom: 4px;
-        }
-        .action-panel-title {
-          font-size: 13px;
-          font-weight: 600;
-          color: rgba(255,255,255,0.85);
-        }
-        .action-panel-subtitle {
-          font-size: 11px;
-          color: rgba(255,255,255,0.35);
-          margin-top: 1px;
-        }
-        .action-panel-close {
-          background: none;
-          border: none;
-          cursor: pointer;
-          color: rgba(255,255,255,0.3);
-          padding: 4px;
-          display: flex;
-          align-items: center;
-          transition: color .15s;
-        }
-        .action-panel-close:hover { color: rgba(255,255,255,0.6); }
-
-        .action-panel-list {
-          display: flex;
-          flex-direction: column;
-          gap: 2px;
-        }
-        .action-panel-item {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          padding: 9px 12px;
-          border-radius: 7px;
-          border: none;
-          background: transparent;
-          cursor: pointer;
-          text-align: left;
-          font-family: inherit;
-          font-size: 13px;
-          color: rgba(255,255,255,0.80);
-          transition: background .1s;
-        }
-        .action-panel-item:hover { background: rgba(255,255,255,0.07); }
-        .action-panel-item.danger { color: rgba(248,113,113,0.85); }
-        .action-panel-item.danger:hover { background: rgba(248,113,113,0.08); }
-        .action-panel-item-icon { color: rgba(255,255,255,0.40); display: flex; }
-        .action-panel-item .action-panel-item-icon { flex-shrink: 0; }
-        .action-panel-item-label { flex: 1; }
-        .action-panel-item-shortcut {
-          font-size: 11px;
-          color: rgba(255,255,255,0.30);
-          font-family: -apple-system, monospace;
-        }
-      `}</style>
     </div>
   )
 }
