@@ -17,6 +17,7 @@ import (
 	"github.com/dyike/Void/internal/service/snippets"
 	"github.com/dyike/Void/internal/window"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/services/dock"
 )
 
 //go:embed all:frontend/dist
@@ -42,6 +43,7 @@ func main() {
 	calcSvc := calculator.NewService()
 	scriptsSvc := scripts.NewService(dataDir)
 	hotkeySvc := hotkey.NewService()
+	dockSvc := dock.New()
 
 	// Start background clipboard polling
 	clipboardSvc.Start()
@@ -74,6 +76,7 @@ func main() {
 			application.NewService(snippetsSvc),
 			application.NewService(calcSvc),
 			application.NewService(scriptsSvc),
+			application.NewService(dockSvc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -88,6 +91,7 @@ func main() {
 
 	// Initialize the main window and system tray via Manager
 	winManager.SetSettingsService(settingsSvc)
+	winManager.SetDockService(dockSvc)
 	winManager.Init(app)
 	winManager.CreateMainWindow("/")
 

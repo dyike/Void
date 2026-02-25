@@ -4,6 +4,7 @@ import (
 	"github.com/dyike/Void/internal/service/settings"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"github.com/wailsapp/wails/v3/pkg/services/dock"
 )
 
 // Manager encapsulates all Wails window and system tray operations.
@@ -13,6 +14,7 @@ type Manager struct {
 	settingsWindow *application.WebviewWindow
 	tray           *application.SystemTray
 	settingsSvc    *settings.Service
+	dockSvc        *dock.DockService
 }
 
 // NewManager creates a new window manager.
@@ -23,6 +25,11 @@ func NewManager() *Manager {
 // SetSettingsService wires the settings service for theme-aware window creation.
 func (m *Manager) SetSettingsService(svc *settings.Service) {
 	m.settingsSvc = svc
+}
+
+// SetDockService wires the dock service to toggle the dock icon visibility for settings.
+func (m *Manager) SetDockService(svc *dock.DockService) {
+	m.dockSvc = svc
 }
 
 // Init sets the Wails Application instance, creates the system tray, and binds global window events.
@@ -146,6 +153,9 @@ func (m *Manager) OpenSettings() {
 	m.settingsWindow.Center()
 
 	m.settingsWindow.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
+		if m.dockSvc != nil {
+			m.dockSvc.HideAppIcon()
+		}
 		m.settingsWindow = nil
 	})
 }
@@ -158,6 +168,9 @@ func (m *Manager) GetMainWindow() *application.WebviewWindow {
 // ShowSettings makes the settings window visible. Called after the frontend signals it is ready.
 func (m *Manager) ShowSettings() {
 	if m.settingsWindow != nil {
+		if m.dockSvc != nil {
+			m.dockSvc.ShowAppIcon()
+		}
 		m.settingsWindow.Show()
 		m.settingsWindow.Focus()
 	}
