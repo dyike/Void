@@ -48,7 +48,35 @@ Events.On('ThemeChanged', (e: any) => {
   }
 })
 
-// Re-apply theme when window becomes visible (covers hotkey activation)
+// --- Text Size Management ---
+export function applyTextSize(size: string) {
+  const html = document.documentElement
+  if (size === 'small') {
+    html.style.zoom = '0.85'
+  } else if (size === 'large') {
+    html.style.zoom = '1.25'
+  } else {
+    html.style.zoom = '1'
+  }
+}
+
+let currentTextSize = 'medium'
+
+export function setTextSize(size: string) {
+  currentTextSize = size
+  applyTextSize(size)
+  Events.Emit('TextSizeChanged' as any, size)
+}
+
+Events.On('TextSizeChanged', (e: any) => {
+  const size = (e?.data ?? e) as string
+  if (size && typeof size === 'string') {
+    currentTextSize = size
+    applyTextSize(size)
+  }
+})
+
+// Re-apply theme and text size when window becomes visible (covers hotkey activation)
 document.addEventListener('visibilitychange', () => {
   if (!document.hidden) {
     SettingsService.GetSettings()
@@ -58,20 +86,30 @@ document.addEventListener('visibilitychange', () => {
           currentMode = mode
           applyTheme(mode)
         }
+        const size = s?.fontSize || 'medium'
+        if (size !== currentTextSize) {
+          currentTextSize = size
+          applyTextSize(size)
+        }
       })
       .catch(() => { })
   }
 })
 
-// Initialize theme from settings
+// Initialize theme and text size from settings
 SettingsService.GetSettings()
   .then((s: any) => {
     const mode = s?.themeMode || 'system'
     currentMode = mode
     applyTheme(mode)
+
+    const size = s?.fontSize || 'medium'
+    currentTextSize = size
+    applyTextSize(size)
   })
   .catch(() => {
     applyTheme('system')
+    applyTextSize('medium')
   })
 
 function Root() {

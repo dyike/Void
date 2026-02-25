@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Settings, Puzzle, Cpu, Wrench, Info, FolderGit2, Sun, Moon, Monitor } from 'lucide-react'
-import { setThemeMode } from './main'
+import { setThemeMode, setTextSize } from './main'
 
 // Hotkey Recorder
 interface HotkeyRecorderProps {
@@ -133,6 +133,8 @@ const SettingsView: React.FC = () => {
 
     const update = <K extends keyof AppSettings>(key: K, value: any) => {
         setSettings(prev => prev ? { ...prev, [key]: value } as AppSettings : prev)
+        if (key === 'themeMode') setThemeMode(value as string)
+        if (key === 'fontSize') setTextSize(value as string)
     }
     const updateAI = <K extends keyof AppSettings['ai']>(key: K, value: any) => {
         setSettings(prev => prev ? { ...prev, ai: { ...prev.ai, [key]: value } } as AppSettings : prev)
@@ -261,6 +263,12 @@ const SettingsView: React.FC = () => {
                                             onClick={() => update('fontSize', 'medium')}
                                         >
                                             <span className="text-[15px] font-semibold">Aa</span>
+                                        </button>
+                                        <button
+                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'large' ? 'bg-accent text-foreground/95 shadow-sm' : 'text-muted-foreground hover:text-foreground/80'}`}
+                                            onClick={() => update('fontSize', 'large')}
+                                        >
+                                            <span className="text-[17px] font-semibold">Aa</span>
                                         </button>
                                     </div>
                                 </Row>
