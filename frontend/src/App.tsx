@@ -140,6 +140,24 @@ const App: React.FC = () => {
     if (view === 'launcher') setTimeout(() => inputRef.current?.focus(), 50)
   }, [view])
 
+  // Re-focus search input when window becomes visible (e.g., activated via hotkey)
+  useEffect(() => {
+    const focusInput = () => {
+      if (view === 'launcher') {
+        setTimeout(() => inputRef.current?.focus(), 50)
+      }
+    }
+    const handleVisibility = () => {
+      if (!document.hidden) focusInput()
+    }
+    document.addEventListener('visibilitychange', handleVisibility)
+    window.addEventListener('focus', focusInput)
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility)
+      window.removeEventListener('focus', focusInput)
+    }
+  }, [view])
+
   // ── Performer actions ─────────────────────────────────────────────────
   const handleAction = useCallback(async (actionId: string) => {
     const cmd = flat[selectedIndex]
@@ -246,7 +264,7 @@ const App: React.FC = () => {
     const onBack = () => { setView('launcher'); setQuery('') }
     const title = { clipboard: 'Clipboard History', ai: 'AI Chat', snippets: 'Snippets', scripts: 'Script Commands' }[view]
     return (
-      <div className="flex h-full w-full flex-col overflow-hidden rounded-[14px] border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl" onKeyDown={handleKeyDown}>
+      <div className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl" onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-2 border-b border-launcher-border px-4 py-3">
           <Button
             variant="ghost"
@@ -274,7 +292,7 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden rounded-[14px] border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl"
+      className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl"
       onKeyDown={handleKeyDown}
       onMouseDown={() => inputRef.current?.focus()}
     >
