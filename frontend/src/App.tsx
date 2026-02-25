@@ -110,13 +110,15 @@ const App: React.FC = () => {
 
   // ── Filter + group ────────────────────────────────────────────────────
   const filtered = useMemo(() => {
-    const base = query.trim()
-      ? commands.filter(c =>
-        c.title.toLowerCase().includes(query.toLowerCase()) ||
-        (c.subtitle?.toLowerCase().includes(query.toLowerCase()) ?? false)
-      )
+    const q = query.trim().toLowerCase()
+    const base = q
+      ? commands.filter(c => c.title.toLowerCase().includes(q))
       : commands
-    return fileResults.length > 0 ? [...base, ...fileResults] : base
+    // Only include file results with a reasonable fuzzy score
+    const goodFiles = fileResults
+      .filter(f => (f.score ?? 0) > 0)
+      .slice(0, 10)
+    return goodFiles.length > 0 ? [...base, ...goodFiles] : base
   }, [commands, fileResults, query])
 
   const grouped = useMemo(() => {
@@ -294,7 +296,13 @@ const App: React.FC = () => {
     <div
       className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl"
       onKeyDown={handleKeyDown}
-      onMouseDown={() => inputRef.current?.focus()}
+      onMouseDown={(e) => {
+        // Prevent clicks on non-input elements from stealing focus
+        if (e.target !== inputRef.current) {
+          e.preventDefault()
+          inputRef.current?.focus()
+        }
+      }}
     >
       {/* Search bar */}
       <div className="flex items-center gap-2 border-b border-launcher-border px-4 py-3">

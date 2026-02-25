@@ -86,18 +86,18 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
 
 function Row({ label, children, alignTop = false }: { label: string; children?: React.ReactNode, alignTop?: boolean }) {
     return (
-        <div className={`grid grid-cols-[160px_1fr] gap-6 py-2.5 px-8 items-${alignTop ? 'start' : 'center'}`}>
-            <div className="text-right text-[13px] font-medium text-muted-foreground tracking-wide mt-1">
+        <div className={`grid grid-cols-[130px_1fr] gap-4 py-1.5 px-6 items-${alignTop ? 'start' : 'center'}`}>
+            <div className="text-right text-[12px] font-medium text-muted-foreground tracking-wide mt-0.5">
                 {label}
             </div>
-            <div className="flex flex-col items-start gap-2 w-full">
+            <div className="flex flex-col items-start gap-1.5 w-full">
                 {children}
             </div>
         </div>
     )
 }
 
-const TAB_CLASS = "w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-foreground/90 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground shadow-none -mb-[1px]"
+const TAB_CLASS = "w-[64px] flex flex-col gap-1 px-1.5 py-2 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-foreground/90 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground shadow-none -mb-[1px]"
 
 const SettingsView: React.FC = () => {
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -109,7 +109,7 @@ const SettingsView: React.FC = () => {
     const [skillsList, setSkillsList] = useState<Skill[]>([])
 
     useEffect(() => {
-        SettingsService.NotifySettingsReady().catch(() => {})
+        SettingsService.NotifySettingsReady().catch(() => { })
     }, [])
 
     useEffect(() => {
@@ -164,37 +164,37 @@ const SettingsView: React.FC = () => {
     const inputClass = "w-[280px] bg-secondary/50 border-border text-foreground focus:ring-indigo-500/20 focus:border-indigo-500"
 
     return (
-        <div className="flex flex-col h-screen text-foreground/90 font-sans select-none overflow-hidden bg-background/80 backdrop-blur-3xl" style={{ WebkitAppRegion: 'drag' } as any}>
+        <div className="flex flex-col h-screen text-foreground/90 font-sans select-none overflow-hidden bg-background/80 backdrop-blur-3xl text-[13px]" style={{ WebkitAppRegion: 'drag' } as any}>
             <div className="absolute top-0 left-0 right-0 h-[38px] flex items-center justify-center text-[13px] font-semibold text-muted-foreground pointer-events-none">
                 Void Settings
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden" defaultValue="general">
-                <div className="flex justify-center pt-[38px]">
-                    <TabsList className="bg-transparent border-b border-border rounded-none h-auto p-0 gap-4 flex w-full justify-center px-6">
+                <div className="flex justify-center pt-[36px]">
+                    <TabsList className="bg-transparent border-b border-border rounded-none h-auto p-0 gap-2 flex w-full justify-center px-4">
                         <TabsTrigger value="general" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <Settings className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">General</span>
+                            <Settings className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">General</span>
                         </TabsTrigger>
                         <TabsTrigger value="extensions" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <Puzzle className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">Extensions</span>
+                            <Puzzle className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">Extensions</span>
                         </TabsTrigger>
                         <TabsTrigger value="skills" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <FolderGit2 className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">Skills</span>
+                            <FolderGit2 className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">Skills</span>
                         </TabsTrigger>
                         <TabsTrigger value="ai" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <Cpu className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">AI</span>
+                            <Cpu className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">AI</span>
                         </TabsTrigger>
                         <TabsTrigger value="advanced" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <Wrench className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">Advanced</span>
+                            <Wrench className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">Advanced</span>
                         </TabsTrigger>
                         <TabsTrigger value="about" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
-                            <Info className="w-[22px] h-[22px]" />
-                            <span className="text-xs font-semibold tracking-wide">About</span>
+                            <Info className="w-[18px] h-[18px]" />
+                            <span className="text-[10px] font-semibold tracking-wide">About</span>
                         </TabsTrigger>
                     </TabsList>
                 </div>
@@ -208,7 +208,7 @@ const SettingsView: React.FC = () => {
                             </div>
                         </TabsContent>
                     ) : (
-                        <div className="max-w-[600px] mx-auto py-8">
+                        <div className="max-w-[560px] mx-auto py-5">
 
                             <TabsContent value="general" className="mt-0 outline-none">
                                 <Row label="Startup">
@@ -233,7 +233,7 @@ const SettingsView: React.FC = () => {
                                     </div>
                                 </Row>
 
-                                <div className="h-[1px] bg-border my-6 w-full max-w-[536px] mx-auto" />
+                                <div className="h-[1px] bg-border my-3 w-full max-w-[480px] mx-auto" />
 
                                 <Row label="Terminal App">
                                     <Select value={settings.terminalApp || 'Terminal'} onValueChange={v => update('terminalApp', v)}>
@@ -404,7 +404,7 @@ const SettingsView: React.FC = () => {
 
                 {/* Save Banner */}
                 {(activeTab === 'general' || activeTab === 'ai') && (
-                    <div className="border-t border-border bg-secondary/20 px-8 py-4 flex items-center justify-end gap-4" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                    <div className="border-t border-border bg-secondary/20 px-6 py-2.5 flex items-center justify-end gap-3" style={{ WebkitAppRegion: 'no-drag' } as any}>
                         <span className="text-xs text-muted-foreground/60">Some changes require a restart</span>
                         <Button
                             variant="secondary"

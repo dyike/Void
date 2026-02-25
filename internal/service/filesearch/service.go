@@ -73,10 +73,16 @@ func SearchFiles(rootDir string, query string) []Result {
 	matchTime := time.Since(matchStart)
 	log.Printf("filesearch: fuzzy matched %d results in %v", len(matches), matchTime)
 
+	// Minimum score threshold: reject weak matches
+	minScore := len(query) * 2
+
 	var results []Result
 	for _, m := range matches {
 		if len(results) >= maxResults {
 			break
+		}
+		if m.Score < minScore {
+			continue
 		}
 		p := paths[m.Index]
 		results = append(results, Result{
