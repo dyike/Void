@@ -7,11 +7,13 @@ import (
 	"log"
 	"os"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/crosszan/modu/pkg/agent"
 	"github.com/crosszan/modu/pkg/coding_agent/tools"
 	"github.com/crosszan/modu/pkg/llm"
+	_ "github.com/crosszan/modu/pkg/llm/providers/deepseek"
 	_ "github.com/crosszan/modu/pkg/llm/providers/ollama"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai_completions"
@@ -27,13 +29,15 @@ type AskResult struct {
 
 // AIEvent represents a unified streaming event sent to the frontend.
 type AIEvent struct {
-	Type    string `json:"type"`              // "delta" | "tool_start" | "tool_end" | "action" | "turn" | "done"
-	Content string `json:"content,omitempty"` // delta text or action text
-	Name    string `json:"name,omitempty"`    // tool name
-	Args    string `json:"args,omitempty"`    // tool args JSON
-	Result  string `json:"result,omitempty"`  // tool result JSON
-	IsError bool   `json:"isError,omitempty"` // tool error flag
-	Turn    int    `json:"turn,omitempty"`    // turn number
+	Type      string `json:"type"`              // "delta" | "tool_start" | "tool_end" | "action" | "turn" | "done"
+	Content   string `json:"content,omitempty"` // delta text or action text
+	Name      string `json:"name,omitempty"`    // tool name
+	Args      string `json:"args,omitempty"`    // tool args JSON
+	Result    string `json:"result,omitempty"`  // tool result JSON
+	IsError   bool   `json:"isError,omitempty"` // tool error flag
+	Turn      int    `json:"turn,omitempty"`    // turn number
+	Seq       int64  `json:"seq"`               // monotonically increasing sequence number
+	Timestamp int64  `json:"timestamp"`         // event timestamp in ms
 }
 
 // Service handles AI inference.
@@ -51,6 +55,22 @@ func buildModel(ai settings.AISettings) (*llm.Model, error) {
 	modelID := ai.DefaultModel
 
 	switch ai.Provider {
+	case "deepseek":
+		if modelID == "" {
+			modelID = "deepseek-chat"
+		}
+		apiKey := ai.DeepSeekApiKey
+		if apiKey == "" {
+			return nil, fmt.Errorf("DeepSeek API key is not configured")
+		}
+		os.Setenv("DEEPSEEK_API_KEY", apiKey)
+		return &llm.Model{
+			ID:       modelID,
+			Provider: llm.Provider(llm.KnownProviderDeepSeek),
+			Api:      llm.Api(llm.KnownApiDeepSeekChat),
+			BaseURL:  "https://api.deepseek.com/v1",
+		}, nil
+
 	case "ollama":
 		if modelID == "" {
 			modelID = "llama3"
@@ -160,7 +180,12 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 	defer cancel()
 
 	turnCount := 0
+	var seq int64
 	a := agent.NewAgent(agentOpts)
+
+	nextSeq := func() int64 {
+		return atomic.AddInt64(&seq, 1)
+	}
 
 	// Subscribe to streaming events and push to Wails frontend via a single unified event
 	a.Subscribe(func(e agent.AgentEvent) {
@@ -176,32 +201,36 @@ func (s *Service) Ask(prompt string) (*AskResult, error) {
 				log.Printf("[AI] turn limit reached, aborting")
 				cancel()
 			}
-			app.Event.Emit("AIEvent", AIEvent{Type: "turn", Turn: turnCount})
+			app.Event.Emit("AIEvent", AIEvent{Type: "turn", Turn: turnCount, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		case agent.EventTypeMessageUpdate:
 			if e.AssistantMessageEvent != nil && e.AssistantMessageEvent.Delta != "" {
 				log.Printf("[AI] delta: %q", e.AssistantMessageEvent.Delta)
-				app.Event.Emit("AIEvent", AIEvent{Type: "delta", Content: e.AssistantMessageEvent.Delta})
+				app.Event.Emit("AIEvent", AIEvent{Type: "delta", Content: e.AssistantMessageEvent.Delta, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 			}
 		case agent.EventTypeToolExecutionStart:
 			argsJSON, _ := json.Marshal(e.Args)
 			log.Printf("[AI] tool start: %s args=%s", e.ToolName, string(argsJSON))
 			app.Event.Emit("AIEvent", AIEvent{
-				Type: "tool_start",
-				Name: e.ToolName,
-				Args: string(argsJSON),
+				Type:      "tool_start",
+				Name:      e.ToolName,
+				Args:      string(argsJSON),
+				Seq:       nextSeq(),
+				Timestamp: time.Now().UnixMilli(),
 			})
 		case agent.EventTypeToolExecutionEnd:
 			resultJSON, _ := json.Marshal(e.Result)
 			log.Printf("[AI] tool end: %s isError=%v", e.ToolName, e.IsError)
 			app.Event.Emit("AIEvent", AIEvent{
-				Type:    "tool_end",
-				Name:    e.ToolName,
-				Result:  string(resultJSON),
-				IsError: e.IsError,
+				Type:      "tool_end",
+				Name:      e.ToolName,
+				Result:    string(resultJSON),
+				IsError:   e.IsError,
+				Seq:       nextSeq(),
+				Timestamp: time.Now().UnixMilli(),
 			})
 		case agent.EventTypeAgentEnd:
 			log.Printf("[AI] agent finished")
-			app.Event.Emit("AIEvent", AIEvent{Type: "done"})
+			app.Event.Emit("AIEvent", AIEvent{Type: "done", Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		}
 	})
 

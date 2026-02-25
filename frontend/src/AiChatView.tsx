@@ -42,6 +42,8 @@ interface AIEvent {
     result?: string
     isError?: boolean
     turn?: number
+    seq: number
+    timestamp: number
 }
 
 const ToolCallCard: React.FC<{ tool: ToolCall }> = ({ tool }) => {
@@ -132,98 +134,101 @@ const AiChatView: React.FC = () => {
     const bottomRef = useRef<HTMLDivElement>(null)
     const activeAssistantIdRef = useRef<string | null>(null)
     const hasStreamedRef = useRef(false)
+    const pendingEventsRef = useRef<AIEvent[]>([])
+    const rafRef = useRef<number | null>(null)
+    const eventSeqRef = useRef(0)
+
+    const processEvents = () => {
+        rafRef.current = null
+        
+        const events = pendingEventsRef.current.sort((a, b) => a.seq - b.seq)
+        pendingEventsRef.current = []
+        
+        setBlocks(prev => {
+            let blocks = [...prev]
+            let assistantId = activeAssistantIdRef.current
+            
+            const getOrCreateAssistant = () => {
+                if (!assistantId) {
+                    assistantId = `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`
+                    activeAssistantIdRef.current = assistantId
+                    blocks.push({ id: assistantId, role: 'assistant', parts: [] })
+                }
+                const idx = blocks.findIndex(b => b.id === assistantId)
+                if (idx === -1) {
+                    blocks.push({ id: assistantId, role: 'assistant', parts: [] })
+                    return blocks.length - 1
+                }
+                return idx
+            }
+            
+            for (const event of events) {
+                switch (event.type) {
+                    case 'delta':
+                        if (!event.content) continue
+                        hasStreamedRef.current = true
+                        const idx = getOrCreateAssistant()
+                        const block = blocks[idx]
+                        const lastPart = block.parts[block.parts.length - 1]
+                        if (lastPart?.type === 'text') {
+                            const updatedPart = { ...lastPart, text: (lastPart.text || '') + event.content }
+                            const updatedParts = [...block.parts.slice(0, -1), updatedPart]
+                            blocks[idx] = { ...block, parts: updatedParts }
+                        } else {
+                            blocks[idx] = { ...block, parts: [...block.parts, { type: 'text', text: event.content }] }
+                        }
+                        break
+                    case 'tool_start':
+                         const toolIdx = getOrCreateAssistant()
+                         const toolBlock = blocks[toolIdx]
+                         blocks[toolIdx] = { ...toolBlock, parts: [...toolBlock.parts, { type: 'tool', tool: { name: event.name || 'unknown', args: event.args || '{}', status: 'running', startTime: Date.now() } }] }
+                         break
+                    case 'tool_end':
+                        for (let i = blocks.length - 1; i >= 0; i--) {
+                            const block = blocks[i]
+                            for (let j = block.parts.length - 1; j >= 0; j--) {
+                                const part = block.parts[j]
+                                if (part.type === 'tool' && part.tool?.name === event.name && part.tool?.status === 'running') {
+                                    const updatedTool = { ...part.tool, result: event.result || '', isError: event.isError || false, status: 'done' as const }
+                                    const updatedParts = [...block.parts]
+                                    updatedParts[j] = { ...part, tool: updatedTool }
+                                    blocks[i] = { ...block, parts: updatedParts }
+                                    break
+                                }
+                            }
+                        }
+                        break
+                }
+            }
+            return blocks
+        })
+    }
 
     useEffect(() => {
         inputRef.current?.focus()
 
-        const getOrCreateAssistantId = () => {
-            let id = activeAssistantIdRef.current
-            if (id) return id
-            id = `assistant-${Date.now()}-${Math.random().toString(16).slice(2)}`
-            activeAssistantIdRef.current = id
-            return id
-        }
-
-        const appendText = (delta: string) => {
-            if (!delta) return
-            hasStreamedRef.current = true
-            const id = getOrCreateAssistantId()
-            setBlocks(prev => {
-                const next = [...prev]
-                let idx = next.findIndex(b => b.id === id)
-                if (idx === -1) {
-                    next.push({ id, role: 'assistant', parts: [] })
-                    idx = next.length - 1
-                }
-                const block = next[idx]
-                const lastPart = block.parts[block.parts.length - 1]
-                if (lastPart?.type === 'text') {
-                    const updatedPart = { ...lastPart, text: (lastPart.text || '') + delta }
-                    const updatedParts = [...block.parts.slice(0, -1), updatedPart]
-                    next[idx] = { ...block, parts: updatedParts }
-                } else {
-                    next[idx] = { ...block, parts: [...block.parts, { type: 'text', text: delta }] }
-                }
-                return next
-            })
-        }
-
-        const appendToolStart = (name: string, args: string) => {
-            const id = getOrCreateAssistantId()
-            setBlocks(prev => {
-                const next = [...prev]
-                let idx = next.findIndex(b => b.id === id)
-                if (idx === -1) {
-                    next.push({ id, role: 'assistant', parts: [] })
-                    idx = next.length - 1
-                }
-                const block = next[idx]
-                next[idx] = { ...block, parts: [...block.parts, { type: 'tool', tool: { name, args, status: 'running', startTime: Date.now() } }] }
-                return next
-            })
-        }
-
-        const updateToolEnd = (name: string, result: string, isError: boolean) => {
-            setBlocks(prev => {
-                const next = [...prev]
-                for (let i = next.length - 1; i >= 0; i--) {
-                    const block = next[i]
-                    for (let j = block.parts.length - 1; j >= 0; j--) {
-                        const part = block.parts[j]
-                        if (part.type === 'tool' && part.tool?.name === name && part.tool?.status === 'running') {
-                            const updatedTool = { ...part.tool, result, isError, status: 'done' as const, duration: Date.now() - part.tool.startTime }
-                            const updatedParts = [...block.parts]
-                            updatedParts[j] = { ...part, tool: updatedTool }
-                            next[i] = { ...block, parts: updatedParts }
-                            return next
-                        }
-                    }
-                }
-                return next
-            })
-        }
-
         const unsub = Events.On('AIEvent', (e: any) => {
             const event = (e.data ?? e) as AIEvent
             if (!event || !event.type) return
-            console.log('[AIEvent]', event.type, event)
-            switch (event.type) {
-                case 'delta':
-                    appendText(event.content || '')
-                    break
-                case 'tool_start':
-                    appendToolStart(event.name || 'unknown', event.args || '{}')
-                    break
-                case 'tool_end':
-                    updateToolEnd(event.name || '', event.result || '', event.isError || false)
-                    break
-                case 'done':
-                    break
+            if (!event.timestamp) {
+                event.timestamp = Date.now()
+            }
+            eventSeqRef.current++
+            console.log(`[AIEvent] recv#${eventSeqRef.current} seq=${event.seq}`, event.type, event.type === 'delta' ? event.content : event.name || '')
+            pendingEventsRef.current.push(event)
+            
+            if (!rafRef.current) {
+                rafRef.current = requestAnimationFrame(() => {
+                    processEvents()
+                })
             }
         })
 
         return () => {
             unsub()
+            if (rafRef.current) {
+                cancelAnimationFrame(rafRef.current)
+            }
         }
     }, [])
 

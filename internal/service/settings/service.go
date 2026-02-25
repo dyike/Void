@@ -11,11 +11,12 @@ import (
 
 // AISettings holds AI provider configuration.
 type AISettings struct {
-	Provider                string `json:"provider"` // "openai" | "anthropic" | "ollama" | "openai-compatible"
+	Provider                string `json:"provider"` // "openai" | "anthropic" | "ollama" | "deepseek"
 	OpenAIApiKey            string `json:"openaiApiKey"`
 	AnthropicApiKey         string `json:"anthropicApiKey"`
 	OllamaBaseUrl           string `json:"ollamaBaseUrl"`
 	DefaultModel            string `json:"defaultModel"`
+	DeepSeekApiKey          string `json:"deepseekApiKey"`
 	OpenAICompatibleBaseUrl string `json:"openaiCompatibleBaseUrl"`
 	OpenAICompatibleApiKey  string `json:"openaiCompatibleApiKey"`
 	OpenAICompatibleModel   string `json:"openaiCompatibleModel"`

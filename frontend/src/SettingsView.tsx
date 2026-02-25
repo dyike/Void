@@ -335,6 +335,7 @@ const SettingsView: React.FC = () => {
                                         </SelectTrigger>
                                         <SelectContent className="bg-zinc-900 border-zinc-800 text-white/90">
                                             <SelectItem value="openai">OpenAI</SelectItem>
+                                            <SelectItem value="deepseek">DeepSeek</SelectItem>
                                             <SelectItem value="ollama">Ollama</SelectItem>
                                             <SelectItem value="openai-compatible">OpenAI-Compatible</SelectItem>
                                         </SelectContent>
@@ -347,6 +348,15 @@ const SettingsView: React.FC = () => {
                                     </Row>
                                     <Row label="Model">
                                         <Input placeholder="gpt-4o-mini" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                    </Row>
+                                </>)}
+
+                                {settings.ai.provider === 'deepseek' && (<>
+                                    <Row label="API Key">
+                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.deepseekApiKey} onChange={e => updateAI('deepseekApiKey', e.target.value)} />
+                                    </Row>
+                                    <Row label="Model">
+                                        <Input placeholder="deepseek-chat" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
                                     </Row>
                                 </>)}
 

@@ -10,13 +10,14 @@ import { Create as $Create } from "@wailsio/runtime";
  */
 export class AISettings {
     /**
-     * "openai" | "anthropic" | "ollama" | "openai-compatible"
+     * "openai" | "anthropic" | "ollama" | "deepseek"
      */
     "provider": string;
     "openaiApiKey": string;
     "anthropicApiKey": string;
     "ollamaBaseUrl": string;
     "defaultModel": string;
+    "deepseekApiKey": string;
     "openaiCompatibleBaseUrl": string;
     "openaiCompatibleApiKey": string;
     "openaiCompatibleModel": string;
@@ -38,6 +39,9 @@ export class AISettings {
         }
         if (!("defaultModel" in $$source)) {
             this["defaultModel"] = "";
+        }
+        if (!("deepseekApiKey" in $$source)) {
+            this["deepseekApiKey"] = "";
         }
         if (!("openaiCompatibleBaseUrl" in $$source)) {
             this["openaiCompatibleBaseUrl"] = "";
