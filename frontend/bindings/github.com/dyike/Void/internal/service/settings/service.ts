@@ -105,6 +105,13 @@ export function SetShowSettingsFunc(fn: any): $CancellablePromise<void> {
     return $Call.ByID(597714838, fn);
 }
 
+/**
+ * SetToggleSystemTrayFunc sets the callback to show/hide the menu bar icon.
+ */
+export function SetToggleSystemTrayFunc(fn: any): $CancellablePromise<void> {
+    return $Call.ByID(1937290971, fn);
+}
+
 // Private type creation functions
 const $$createType0 = $models.AppSettings.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

@@ -90,6 +90,8 @@ export class AppSettings {
      * "dark" | "light" | "system"
      */
     "themeMode": string;
+    "launchAtLogin": boolean;
+    "showInMenuBar": boolean;
     "ai": AISettings;
 
     /** Creates a new AppSettings instance. */
@@ -124,6 +126,12 @@ export class AppSettings {
         if (!("themeMode" in $$source)) {
             this["themeMode"] = "";
         }
+        if (!("launchAtLogin" in $$source)) {
+            this["launchAtLogin"] = false;
+        }
+        if (!("showInMenuBar" in $$source)) {
+            this["showInMenuBar"] = false;
+        }
         if (!("ai" in $$source)) {
             this["ai"] = (new AISettings());
         }
@@ -139,7 +147,7 @@ export class AppSettings {
         const $$createField2_0 = $$createType0;
         const $$createField3_0 = $$createType0;
         const $$createField4_0 = $$createType1;
-        const $$createField10_0 = $$createType2;
+        const $$createField12_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pinnedCommands" in $$parsedSource) {
             $$parsedSource["pinnedCommands"] = $$createField1_0($$parsedSource["pinnedCommands"]);
@@ -154,7 +162,7 @@ export class AppSettings {
             $$parsedSource["commandHotkeys"] = $$createField4_0($$parsedSource["commandHotkeys"]);
         }
         if ("ai" in $$parsedSource) {
-            $$parsedSource["ai"] = $$createField10_0($$parsedSource["ai"]);
+            $$parsedSource["ai"] = $$createField12_0($$parsedSource["ai"]);
         }
         return new AppSettings($$parsedSource as Partial<AppSettings>);
     }

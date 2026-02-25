@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/dyike/Void/internal/autostart"
 )
 
 // AISettings holds AI provider configuration.
@@ -35,6 +37,8 @@ type AppSettings struct {
 	TerminalApp      string            `json:"terminalApp"`
 	SkillsPath       string            `json:"skillsPath"`
 	ThemeMode        string            `json:"themeMode"` // "dark" | "light" | "system"
+	LaunchAtLogin    bool              `json:"launchAtLogin"`
+	ShowInMenuBar    bool              `json:"showInMenuBar"`
 	AI               AISettings        `json:"ai"`
 }
 
@@ -56,17 +60,20 @@ var defaultSettings = AppSettings{
 	TerminalApp:      "Terminal",
 	SkillsPath:       "",
 	ThemeMode:        "system",
+	LaunchAtLogin:    false,
+	ShowInMenuBar:    true,
 	AI:               defaultAI,
 }
 
 // Service manages app settings.
 type Service struct {
-	mu                 sync.RWMutex
-	cache              *AppSettings
-	path               string
-	openSettingsFunc   func()
-	resizeSettingsFunc func(width, height int)
-	showSettingsFunc   func()
+	mu                   sync.RWMutex
+	cache                *AppSettings
+	path                 string
+	openSettingsFunc     func()
+	resizeSettingsFunc   func(width, height int)
+	showSettingsFunc     func()
+	toggleSystemTrayFunc func(show bool)
 }
 
 // SetOpenSettingsFunc sets the callback to open the settings window.
@@ -77,6 +84,11 @@ func (s *Service) SetOpenSettingsFunc(fn func()) {
 // SetResizeSettingsFunc sets the callback to resize the settings window.
 func (s *Service) SetResizeSettingsFunc(fn func(width, height int)) {
 	s.resizeSettingsFunc = fn
+}
+
+// SetToggleSystemTrayFunc sets the callback to show/hide the menu bar icon.
+func (s *Service) SetToggleSystemTrayFunc(fn func(show bool)) {
+	s.toggleSystemTrayFunc = fn
 }
 
 // SetShowSettingsFunc sets the callback to reveal the settings window once the frontend is ready.
@@ -171,6 +183,17 @@ func (s *Service) SaveSettings(updated AppSettings) (*AppSettings, error) {
 		log.Printf("settings: failed to marshal for persist: %v", err)
 	}
 
+	// Apply side-effects immediately
+	if updated.LaunchAtLogin {
+		_ = autostart.Enable()
+	} else {
+		_ = autostart.Disable()
+	}
+
+	if s.toggleSystemTrayFunc != nil {
+		s.toggleSystemTrayFunc(updated.ShowInMenuBar)
+	}
+
 	s.cache = &updated
 	cp := updated
 	return &cp, nil
@@ -221,7 +244,7 @@ func (s *Service) load() *AppSettings {
 		cp := defaultSettings
 		return &cp
 	}
-	var parsed AppSettings
+	parsed := defaultSettings
 	if err := json.Unmarshal(data, &parsed); err != nil {
 		cp := defaultSettings
 		return &cp

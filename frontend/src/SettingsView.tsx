@@ -209,9 +209,9 @@ const SettingsView: React.FC = () => {
 
                             <TabsContent value="general" className="mt-0 outline-none">
                                 <Row label="Startup">
-                                    <div className="flex items-center space-x-2 opacity-60">
-                                        <Checkbox id="startup" disabled checked={false} />
-                                        <label htmlFor="startup" className="text-[13px] font-medium leading-none cursor-not-allowed text-foreground/80">Launch Void at login</label>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="startup" checked={settings.launchAtLogin ?? false} onCheckedChange={(val) => update('launchAtLogin', val)} />
+                                        <label htmlFor="startup" className="text-[13px] font-medium leading-none text-foreground/80 cursor-pointer">Launch Void at login</label>
                                     </div>
                                 </Row>
 
@@ -224,9 +224,9 @@ const SettingsView: React.FC = () => {
                                 </Row>
 
                                 <Row label="Menu Bar Icon">
-                                    <div className="flex items-center space-x-2 opacity-60">
-                                        <Checkbox id="menubar" disabled checked={true} />
-                                        <label htmlFor="menubar" className="text-[13px] font-medium leading-none cursor-not-allowed text-foreground/80">Show Void in menu bar</label>
+                                    <div className="flex items-center space-x-2">
+                                        <Checkbox id="menubar" checked={settings.showInMenuBar ?? true} onCheckedChange={(val) => update('showInMenuBar', val)} />
+                                        <label htmlFor="menubar" className="text-[13px] font-medium leading-none text-foreground/80 cursor-pointer">Show Void in menu bar</label>
                                     </div>
                                 </Row>
 

@@ -197,4 +197,24 @@ func (m *Manager) setupSystemTray() {
 	m.tray.OnClick(func() {
 		m.ToggleLauncher()
 	})
+
+	// Initial tray visibility
+	if m.settingsSvc != nil {
+		settings, _ := m.settingsSvc.GetSettings()
+		if settings != nil && !settings.ShowInMenuBar {
+			m.tray.Hide()
+		}
+	}
+}
+
+// ToggleSystemTray shows or hides the menu bar tray icon
+func (m *Manager) ToggleSystemTray(show bool) {
+	if m.tray == nil {
+		return
+	}
+	if show {
+		m.tray.Show()
+	} else {
+		m.tray.Hide()
+	}
 }

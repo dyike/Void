@@ -61,6 +61,7 @@ func main() {
 	settingsSvc.SetOpenSettingsFunc(winManager.OpenSettings)
 	settingsSvc.SetResizeSettingsFunc(winManager.ResizeSettings)
 	settingsSvc.SetShowSettingsFunc(winManager.ShowSettings)
+	settingsSvc.SetToggleSystemTrayFunc(winManager.ToggleSystemTray)
 
 	app := application.New(application.Options{
 		Name:        "Void",
