@@ -60,6 +60,7 @@ func main() {
 	// Expose Settings callbacks to the Settings service
 	settingsSvc.SetOpenSettingsFunc(winManager.OpenSettings)
 	settingsSvc.SetResizeSettingsFunc(winManager.ResizeSettings)
+	settingsSvc.SetShowSettingsFunc(winManager.ShowSettings)
 
 	app := application.New(application.Options{
 		Name:        "Void",

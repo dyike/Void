@@ -95,7 +95,7 @@ func (m *Manager) OpenSettings() {
 		MinHeight:        400,
 		Frameless:        false,
 		AlwaysOnTop:      false,
-		Hidden:           false,
+		Hidden:           true,
 		BackgroundType:   application.BackgroundTypeTransparent,
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              "/#/settings",
@@ -108,12 +108,18 @@ func (m *Manager) OpenSettings() {
 	})
 
 	m.settingsWindow.Center()
-	m.settingsWindow.Show()
-	m.settingsWindow.Focus()
 
 	m.settingsWindow.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		m.settingsWindow = nil
 	})
+}
+
+// ShowSettings makes the settings window visible. Called after the frontend signals it is ready.
+func (m *Manager) ShowSettings() {
+	if m.settingsWindow != nil {
+		m.settingsWindow.Show()
+		m.settingsWindow.Focus()
+	}
 }
 
 // ResizeSettings safely adjusts the standalone settings window if it exists.

@@ -18,6 +18,8 @@ interface ToolCall {
     result?: string
     isError?: boolean
     status: 'running' | 'done'
+    startTime: number
+    duration?: number
 }
 
 interface Part {
@@ -67,6 +69,9 @@ const ToolCallCard: React.FC<{ tool: ToolCall }> = ({ tool }) => {
                     <XCircle size={12} className="text-red-400" />
                 ) : (
                     <CheckCircle2 size={12} className="text-emerald-400" />
+                )}
+                {tool.duration !== undefined && (
+                    <span className="text-[10px] text-white/30">{tool.duration < 1000 ? `${tool.duration}ms` : `${(tool.duration / 1000).toFixed(1)}s`}</span>
                 )}
             </div>
             {expanded && (
@@ -173,7 +178,7 @@ const AiChatView: React.FC = () => {
                     idx = next.length - 1
                 }
                 const block = next[idx]
-                next[idx] = { ...block, parts: [...block.parts, { type: 'tool', tool: { name, args, status: 'running' } }] }
+                next[idx] = { ...block, parts: [...block.parts, { type: 'tool', tool: { name, args, status: 'running', startTime: Date.now() } }] }
                 return next
             })
         }
@@ -186,7 +191,7 @@ const AiChatView: React.FC = () => {
                     for (let j = block.parts.length - 1; j >= 0; j--) {
                         const part = block.parts[j]
                         if (part.type === 'tool' && part.tool?.name === name && part.tool?.status === 'running') {
-                            const updatedTool = { ...part.tool, result, isError, status: 'done' as const }
+                            const updatedTool = { ...part.tool, result, isError, status: 'done' as const, duration: Date.now() - part.tool.startTime }
                             const updatedParts = [...block.parts]
                             updatedParts[j] = { ...part, tool: updatedTool }
                             next[i] = { ...block, parts: updatedParts }

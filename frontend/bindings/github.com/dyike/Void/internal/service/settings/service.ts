@@ -40,6 +40,14 @@ export function GetSkills(): $CancellablePromise<$models.Skill[]> {
 }
 
 /**
+ * NotifySettingsReady is called by the frontend when the settings page has finished rendering.
+ * It triggers the window to become visible, eliminating the white-flash on open.
+ */
+export function NotifySettingsReady(): $CancellablePromise<void> {
+    return $Call.ByID(2728372351);
+}
+
+/**
  * OpenSettingsWindow opens the settings window.
  */
 export function OpenSettingsWindow(): $CancellablePromise<void> {
@@ -88,6 +96,13 @@ export function SetOpenSettingsFunc(fn: any): $CancellablePromise<void> {
  */
 export function SetResizeSettingsFunc(fn: any): $CancellablePromise<void> {
     return $Call.ByID(2697953339, fn);
+}
+
+/**
+ * SetShowSettingsFunc sets the callback to reveal the settings window once the frontend is ready.
+ */
+export function SetShowSettingsFunc(fn: any): $CancellablePromise<void> {
+    return $Call.ByID(597714838, fn);
 }
 
 // Private type creation functions

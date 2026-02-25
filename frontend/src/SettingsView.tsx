@@ -106,6 +106,10 @@ const SettingsView: React.FC = () => {
     const [skillsList, setSkillsList] = useState<Skill[]>([])
 
     useEffect(() => {
+        SettingsService.NotifySettingsReady().catch(() => {})
+    }, [])
+
+    useEffect(() => {
         SettingsService.GetSettings()
             .then(s => setSettings(s as AppSettings))
             .catch(console.error)

@@ -63,6 +63,7 @@ type Service struct {
 	path               string
 	openSettingsFunc   func()
 	resizeSettingsFunc func(width, height int)
+	showSettingsFunc   func()
 }
 
 // SetOpenSettingsFunc sets the callback to open the settings window.
@@ -73,6 +74,19 @@ func (s *Service) SetOpenSettingsFunc(fn func()) {
 // SetResizeSettingsFunc sets the callback to resize the settings window.
 func (s *Service) SetResizeSettingsFunc(fn func(width, height int)) {
 	s.resizeSettingsFunc = fn
+}
+
+// SetShowSettingsFunc sets the callback to reveal the settings window once the frontend is ready.
+func (s *Service) SetShowSettingsFunc(fn func()) {
+	s.showSettingsFunc = fn
+}
+
+// NotifySettingsReady is called by the frontend when the settings page has finished rendering.
+// It triggers the window to become visible, eliminating the white-flash on open.
+func (s *Service) NotifySettingsReady() {
+	if s.showSettingsFunc != nil {
+		s.showSettingsFunc()
+	}
 }
 
 // OpenSettingsWindow opens the settings window.
