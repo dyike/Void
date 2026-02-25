@@ -27,26 +27,26 @@ const ActionPanel: React.FC<Props> = ({ title, subtitle, actions, onAction, onCl
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-end bg-black/30"
+      className="fixed inset-0 z-[100] flex items-end bg-foreground/10 dark:bg-black/30"
       onClick={onClose}
       onKeyDown={handleKey}
     >
       <div
-        className="w-full rounded-b-[14px] border-t border-white/10 bg-[#14141a]/95 p-2 backdrop-blur-3xl"
+        className="w-full rounded-b-[14px] border-t border-border bg-background/95 p-2 backdrop-blur-3xl"
         onClick={e => e.stopPropagation()}
         onKeyDown={handleKey}
         tabIndex={-1}
         autoFocus
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-2 pb-2">
+        <div className="flex items-center justify-between border-b border-border px-2 pb-2">
           <div>
-            <div className="text-sm font-semibold text-white/85">{title}</div>
-            {subtitle && <div className="text-[11px] text-white/40">{subtitle}</div>}
+            <div className="text-sm font-semibold text-foreground/85">{title}</div>
+            {subtitle && <div className="text-[11px] text-muted-foreground">{subtitle}</div>}
           </div>
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-white/40 hover:text-white/70"
+            className="h-7 w-7 text-muted-foreground hover:text-foreground/70"
             onClick={onClose}
           >
             <X size={14} />
@@ -58,17 +58,17 @@ const ActionPanel: React.FC<Props> = ({ title, subtitle, actions, onAction, onCl
             <button
               key={action.id}
               className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-white/80 transition hover:bg-white/7",
-                action.danger && "text-red-300 hover:bg-red-500/10"
+                "flex items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground/80 transition hover:bg-accent",
+                action.danger && "text-red-600 dark:text-red-300 hover:bg-red-500/10"
               )}
               onClick={() => { onAction(action.id); onClose() }}
             >
               {action.icon && (
-                <span className="flex text-white/40">{action.icon}</span>
+                <span className="flex text-muted-foreground">{action.icon}</span>
               )}
               <span className="flex-1 text-left">{action.label}</span>
               {action.shortcut && (
-                <span className="text-[11px] text-white/35">{action.shortcut}</span>
+                <span className="text-[11px] text-muted-foreground/60">{action.shortcut}</span>
               )}
             </button>
           ))}

@@ -85,11 +85,11 @@ const ScriptCommandsView: React.FC = () => {
 
     return (
         <div className="flex min-h-0 flex-1 flex-col">
-            <div className="flex items-center gap-2 border-b border-white/10 px-4 py-3">
-                <Search size={14} className="text-white/40" />
+            <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+                <Search size={14} className="text-muted-foreground" />
                 <Input
                     ref={searchRef}
-                    className="h-8 border-0 bg-transparent px-0 text-[14px] text-white/90 placeholder:text-white/35 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
+                    className="h-8 border-0 bg-transparent px-0 text-[14px] text-foreground placeholder:text-muted-foreground/60 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
                     placeholder="Search script commands…"
                     value={query}
                     onChange={e => setQuery(e.target.value)}
@@ -98,7 +98,7 @@ const ScriptCommandsView: React.FC = () => {
                     <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7 text-white/40 hover:text-white/80"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
                         onClick={() => setQuery('')}
                     >
                         <X size={13} />
@@ -107,7 +107,7 @@ const ScriptCommandsView: React.FC = () => {
                 <Button
                     variant="secondary"
                     size="sm"
-                    className="ml-auto bg-white/10 text-white/70 hover:bg-white/20"
+                    className="ml-auto bg-secondary text-secondary-foreground hover:bg-accent"
                     onClick={refresh}
                     title="Refresh"
                 >
@@ -116,7 +116,7 @@ const ScriptCommandsView: React.FC = () => {
                 <Button
                     variant="secondary"
                     size="sm"
-                    className="bg-white/10 text-white/70 hover:bg-white/20"
+                    className="bg-secondary text-secondary-foreground hover:bg-accent"
                     onClick={openDir}
                     title="Open scripts folder"
                 >
@@ -125,26 +125,26 @@ const ScriptCommandsView: React.FC = () => {
             </div>
 
             <div className="flex min-h-0 flex-1">
-                <div className="w-[40%] overflow-y-auto border-r border-white/10 p-2">
+                <div className="w-[40%] overflow-y-auto border-r border-border p-2">
                     {filtered.length === 0
-                        ? <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-xs text-white/40">
+                        ? <div className="flex flex-col items-center justify-center gap-1 px-4 py-8 text-xs text-muted-foreground">
                             <span>No scripts found.</span>
-                            <span className="text-white/30">Add .sh scripts to the scripts folder.</span>
+                            <span className="text-muted-foreground/60">Add .sh scripts to the scripts folder.</span>
                         </div>
                         : filtered.map(s => (
                             <div
                                 key={s.id}
                                 className={cn(
                                     "flex cursor-pointer items-center gap-2 rounded-md border border-transparent px-2 py-2 text-sm transition",
-                                    selected?.id === s.id ? "border-indigo-400/40 bg-indigo-500/20" : "hover:bg-white/10"
+                                    selected?.id === s.id ? "border-indigo-400/40 bg-indigo-500/20" : "hover:bg-accent"
                                 )}
                                 onClick={() => selectScript(s)}
                                 onDoubleClick={() => run(s)}
                             >
                                 <span className="text-[13px]">{s.iconEmoji}</span>
-                                <span className="truncate text-[13px] text-white/80">{s.title}</span>
+                                <span className="truncate text-[13px] text-foreground/80">{s.title}</span>
                                 {s.packageName && (
-                                    <span className="ml-1 text-[10px] text-white/35">{s.packageName}</span>
+                                    <span className="ml-1 text-[10px] text-muted-foreground/60">{s.packageName}</span>
                                 )}
                             </div>
                         ))
@@ -154,15 +154,15 @@ const ScriptCommandsView: React.FC = () => {
                 <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                     {selected
                         ? <>
-                            <div className="text-sm font-semibold text-white/85">
+                            <div className="text-sm font-semibold text-foreground/85">
                                 {selected.iconEmoji} {selected.title}
                             </div>
                             {selected.description && (
-                                <div className="text-xs text-white/50">
+                                <div className="text-xs text-muted-foreground">
                                     {selected.description}
                                 </div>
                             )}
-                            <div className="font-mono text-[11px] text-white/35">
+                            <div className="font-mono text-[11px] text-muted-foreground/60">
                                 mode: {selected.mode}
                             </div>
 
@@ -170,11 +170,11 @@ const ScriptCommandsView: React.FC = () => {
                                 <div className="flex flex-col gap-2">
                                     {selected.arguments.map(arg => (
                                         <div key={arg.name}>
-                                            <div className="mb-1 text-[11px] text-white/50">
+                                            <div className="mb-1 text-[11px] text-muted-foreground">
                                                 {arg.name}{arg.required ? ' *' : ''}
                                             </div>
                                             <Input
-                                                className="h-8 border-white/10 bg-white/5 text-white/90 placeholder:text-white/35 focus-visible:ring-indigo-400/30"
+                                                className="h-8 border-input bg-secondary/30 text-foreground placeholder:text-muted-foreground/60 focus-visible:ring-indigo-400/30"
                                                 type={arg.type === 'password' ? 'password' : 'text'}
                                                 placeholder={arg.placeholder || arg.name}
                                                 value={args[arg.name] || ''}
@@ -187,13 +187,13 @@ const ScriptCommandsView: React.FC = () => {
 
                             <Button
                                 size="sm"
-                                className="w-fit bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                                className="w-fit bg-indigo-500/30 text-indigo-600 dark:text-indigo-100 hover:bg-indigo-500/45"
                                 onClick={() => run(selected)}
                                 disabled={status === 'running'}
                             >
                                 {status === 'running'
                                     ? <><Loader2 size={13} className="animate-spin" /> Running…</>
-                                    : <><Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd></>
+                                    : <><Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-600 dark:text-indigo-100">↵</kbd></>
                                 }
                             </Button>
 
@@ -201,33 +201,33 @@ const ScriptCommandsView: React.FC = () => {
                                 <div className="flex min-h-0 flex-1 flex-col gap-2">
                                     <div className="flex items-center gap-2 text-xs">
                                         {status === 'success'
-                                            ? <><CheckCircle size={13} className="text-emerald-400" /><span className="text-emerald-400">Exit 0</span></>
-                                            : <><AlertCircle size={13} className="text-red-400" /><span className="text-red-400">Exit {result.exitCode}</span></>
+                                            ? <><CheckCircle size={13} className="text-emerald-500 dark:text-emerald-400" /><span className="text-emerald-600 dark:text-emerald-400">Exit 0</span></>
+                                            : <><AlertCircle size={13} className="text-red-500 dark:text-red-400" /><span className="text-red-600 dark:text-red-400">Exit {result.exitCode}</span></>
                                         }
                                     </div>
                                     {result.output && (
-                                        <pre className="flex-1 whitespace-pre-wrap break-all rounded-lg border border-white/10 bg-white/5 p-3 text-xs text-white/80">
+                                        <pre className="flex-1 whitespace-pre-wrap break-all rounded-lg border border-border bg-secondary/30 p-3 text-xs text-foreground/80">
                                             {result.output}
                                         </pre>
                                     )}
                                 </div>
                             )}
                         </>
-                        : <div className="flex flex-1 items-center justify-center text-xs text-white/40">Select a script to run</div>
+                        : <div className="flex flex-1 items-center justify-center text-xs text-muted-foreground">Select a script to run</div>
                     }
                 </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 border-t border-white/10 px-3 py-2">
-                <span className="text-xs text-white/35">{filtered.length} scripts</span>
+            <div className="flex items-center justify-between gap-2 border-t border-border px-3 py-2">
+                <span className="text-xs text-muted-foreground/60">{filtered.length} scripts</span>
                 <div className="flex items-center gap-2">
                     {selected && status !== 'running' && (
                         <Button
                             size="sm"
-                            className="bg-indigo-500/30 text-indigo-100 hover:bg-indigo-500/45"
+                            className="bg-indigo-500/30 text-indigo-600 dark:text-indigo-100 hover:bg-indigo-500/45"
                             onClick={() => run(selected)}
                         >
-                            <Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-100">↵</kbd>
+                            <Play size={13} /> Run <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-600 dark:text-indigo-100">↵</kbd>
                         </Button>
                     )}
                 </div>

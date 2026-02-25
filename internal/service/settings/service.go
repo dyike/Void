@@ -34,6 +34,7 @@ type AppSettings struct {
 	BaseColor        string            `json:"baseColor"`
 	TerminalApp      string            `json:"terminalApp"`
 	SkillsPath       string            `json:"skillsPath"`
+	ThemeMode        string            `json:"themeMode"` // "dark" | "light" | "system"
 	AI               AISettings        `json:"ai"`
 }
 
@@ -54,6 +55,7 @@ var defaultSettings = AppSettings{
 	BaseColor:        "#101113",
 	TerminalApp:      "Terminal",
 	SkillsPath:       "",
+	ThemeMode:        "system",
 	AI:               defaultAI,
 }
 
@@ -147,6 +149,9 @@ func (s *Service) SaveSettings(updated AppSettings) (*AppSettings, error) {
 	}
 	if updated.BaseColor == "" {
 		updated.BaseColor = defaultSettings.BaseColor
+	}
+	if updated.ThemeMode == "" {
+		updated.ThemeMode = defaultSettings.ThemeMode
 	}
 	if updated.AI.OllamaBaseUrl == "" {
 		updated.AI.OllamaBaseUrl = defaultAI.OllamaBaseUrl
@@ -242,6 +247,9 @@ func (s *Service) load() *AppSettings {
 	}
 	if parsed.CommandHotkeys == nil {
 		parsed.CommandHotkeys = map[string]string{}
+	}
+	if parsed.ThemeMode == "" {
+		parsed.ThemeMode = defaultSettings.ThemeMode
 	}
 	if parsed.AI.OllamaBaseUrl == "" {
 		parsed.AI.OllamaBaseUrl = defaultAI.OllamaBaseUrl

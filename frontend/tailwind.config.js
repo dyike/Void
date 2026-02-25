@@ -33,6 +33,14 @@ export default {
                     DEFAULT: "hsl(var(--destructive))",
                     foreground: "hsl(var(--destructive-foreground))",
                 },
+                launcher: {
+                    DEFAULT: "hsl(var(--launcher-bg))",
+                    surface: "hsl(var(--launcher-surface))",
+                    text: "hsl(var(--launcher-text))",
+                    "text-secondary": "hsl(var(--launcher-text-secondary))",
+                    "text-tertiary": "hsl(var(--launcher-text-tertiary))",
+                    border: "hsl(var(--launcher-border))",
+                },
             },
             borderRadius: {
                 lg: "var(--radius)",

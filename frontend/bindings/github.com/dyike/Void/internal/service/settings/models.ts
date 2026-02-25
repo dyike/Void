@@ -85,6 +85,11 @@ export class AppSettings {
     "baseColor": string;
     "terminalApp": string;
     "skillsPath": string;
+
+    /**
+     * "dark" | "light" | "system"
+     */
+    "themeMode": string;
     "ai": AISettings;
 
     /** Creates a new AppSettings instance. */
@@ -116,6 +121,9 @@ export class AppSettings {
         if (!("skillsPath" in $$source)) {
             this["skillsPath"] = "";
         }
+        if (!("themeMode" in $$source)) {
+            this["themeMode"] = "";
+        }
         if (!("ai" in $$source)) {
             this["ai"] = (new AISettings());
         }
@@ -131,7 +139,7 @@ export class AppSettings {
         const $$createField2_0 = $$createType0;
         const $$createField3_0 = $$createType0;
         const $$createField4_0 = $$createType1;
-        const $$createField9_0 = $$createType2;
+        const $$createField10_0 = $$createType2;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("pinnedCommands" in $$parsedSource) {
             $$parsedSource["pinnedCommands"] = $$createField1_0($$parsedSource["pinnedCommands"]);
@@ -146,7 +154,7 @@ export class AppSettings {
             $$parsedSource["commandHotkeys"] = $$createField4_0($$parsedSource["commandHotkeys"]);
         }
         if ("ai" in $$parsedSource) {
-            $$parsedSource["ai"] = $$createField9_0($$parsedSource["ai"]);
+            $$parsedSource["ai"] = $$createField10_0($$parsedSource["ai"]);
         }
         return new AppSettings($$parsedSource as Partial<AppSettings>);
     }

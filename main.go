@@ -86,6 +86,7 @@ func main() {
 	})
 
 	// Initialize the main window and system tray via Manager
+	winManager.SetSettingsService(settingsSvc)
 	winManager.Init(app)
 	winManager.CreateMainWindow("/")
 

@@ -1,6 +1,7 @@
 package window
 
 import (
+	"github.com/dyike/Void/internal/service/settings"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 )
@@ -11,11 +12,17 @@ type Manager struct {
 	mainWindow     *application.WebviewWindow
 	settingsWindow *application.WebviewWindow
 	tray           *application.SystemTray
+	settingsSvc    *settings.Service
 }
 
 // NewManager creates a new window manager.
 func NewManager() *Manager {
 	return &Manager{}
+}
+
+// SetSettingsService wires the settings service for theme-aware window creation.
+func (m *Manager) SetSettingsService(svc *settings.Service) {
+	m.settingsSvc = svc
 }
 
 // Init sets the Wails Application instance, creates the system tray, and binds global window events.
@@ -26,8 +33,34 @@ func (m *Manager) Init(app *application.App) {
 	// Intercept main app lifecycle events if necessary (Wails v3 manages most via Run())
 }
 
+// themeAppearance converts a theme mode string to a macOS appearance.
+func themeAppearance(mode string) application.MacAppearanceType {
+	switch mode {
+	case "dark":
+		return application.NSAppearanceNameDarkAqua
+	case "light":
+		return application.NSAppearanceNameAqua
+	default:
+		// "system" — no explicit appearance, follow macOS
+		return ""
+	}
+}
+
+// currentThemeMode reads the current theme mode from settings.
+func (m *Manager) currentThemeMode() string {
+	if m.settingsSvc == nil {
+		return "system"
+	}
+	s, err := m.settingsSvc.GetSettings()
+	if err != nil || s.ThemeMode == "" {
+		return "system"
+	}
+	return s.ThemeMode
+}
+
 // CreateMainWindow constructs the main search and launcher window.
 func (m *Manager) CreateMainWindow(url string) *application.WebviewWindow {
+	themeMode := m.currentThemeMode()
 	m.mainWindow = m.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "Void",
 		Width:            680,
@@ -43,7 +76,7 @@ func (m *Manager) CreateMainWindow(url string) *application.WebviewWindow {
 		Mac: application.MacWindow{
 			Backdrop:   application.MacBackdropTranslucent,
 			TitleBar:   application.MacTitleBarHidden,
-			Appearance: application.NSAppearanceNameDarkAqua,
+			Appearance: themeAppearance(themeMode),
 		},
 	})
 
@@ -87,6 +120,8 @@ func (m *Manager) OpenSettings() {
 		return
 	}
 
+	themeMode := m.currentThemeMode()
+
 	m.settingsWindow = m.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "Void Settings",
 		Width:            780,
@@ -100,8 +135,9 @@ func (m *Manager) OpenSettings() {
 		BackgroundColour: application.NewRGBA(0, 0, 0, 0),
 		URL:              "/#/settings",
 		Mac: application.MacWindow{
-			Backdrop: application.MacBackdropTranslucent,
-			TitleBar: application.MacTitleBarHiddenInsetUnified,
+			Backdrop:   application.MacBackdropTranslucent,
+			TitleBar:   application.MacTitleBarHiddenInsetUnified,
+			Appearance: themeAppearance(themeMode),
 		},
 		MinimiseButtonState: application.ButtonDisabled,
 		MaximiseButtonState: application.ButtonDisabled,
@@ -112,6 +148,11 @@ func (m *Manager) OpenSettings() {
 	m.settingsWindow.OnWindowEvent(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		m.settingsWindow = nil
 	})
+}
+
+// GetMainWindow returns the main launcher window (for external use).
+func (m *Manager) GetMainWindow() *application.WebviewWindow {
+	return m.mainWindow
 }
 
 // ShowSettings makes the settings window visible. Called after the frontend signals it is ready.

@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { Button } from "@/components/ui/button"
 import { Settings, Puzzle, Cpu, Wrench, Info, FolderGit2, Sun, Moon, Monitor } from 'lucide-react'
+import { setThemeMode } from './main'
 
 // Hotkey Recorder
 interface HotkeyRecorderProps {
@@ -72,7 +73,7 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
             className={`px-6 py-2 rounded-lg border flex-1 text-sm font-medium transition-all min-w-[280px]
                 ${recording
                     ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300 ring-2 ring-indigo-500/20 shadow-none'
-                    : 'bg-white/5 border-white/10 text-white/90 hover:bg-white/10'}`}
+                    : 'bg-secondary/50 border-border text-foreground/90 hover:bg-secondary'}`}
             onClick={() => { if (recording) { setRecording(false); setPending('') } else { setRecording(true); setPending('Record shortcut…'); ref.current?.focus() } }}
             onKeyDown={handleKeyDown}
             onBlur={() => { setRecording(false); setPending('') }}
@@ -86,7 +87,7 @@ const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({ value, onChange }) => {
 function Row({ label, children, alignTop = false }: { label: string; children?: React.ReactNode, alignTop?: boolean }) {
     return (
         <div className={`grid grid-cols-[160px_1fr] gap-6 py-2.5 px-8 items-${alignTop ? 'start' : 'center'}`}>
-            <div className="text-right text-[13px] font-medium text-white/50 tracking-wide mt-1">
+            <div className="text-right text-[13px] font-medium text-muted-foreground tracking-wide mt-1">
                 {label}
             </div>
             <div className="flex flex-col items-start gap-2 w-full">
@@ -95,6 +96,8 @@ function Row({ label, children, alignTop = false }: { label: string; children?: 
         </div>
     )
 }
+
+const TAB_CLASS = "w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-foreground/90 data-[state=active]:bg-accent data-[state=active]:text-foreground data-[state=inactive]:text-muted-foreground shadow-none -mb-[1px]"
 
 const SettingsView: React.FC = () => {
     const [settings, setSettings] = useState<AppSettings | null>(null)
@@ -156,38 +159,40 @@ const SettingsView: React.FC = () => {
         } catch (e) { console.error(e) } finally { setSaving(false) }
     }
 
-    if (!settings) return <div className="flex items-center justify-center h-screen text-white/40 text-sm">Loading…</div>
+    if (!settings) return <div className="flex items-center justify-center h-screen text-muted-foreground text-sm">Loading…</div>
+
+    const inputClass = "w-[280px] bg-secondary/50 border-border text-foreground focus:ring-indigo-500/20 focus:border-indigo-500"
 
     return (
-        <div className="flex flex-col h-screen text-white/90 font-sans select-none overflow-hidden bg-[#0e0e12]/80 backdrop-blur-3xl" style={{ WebkitAppRegion: 'drag' } as any}>
-            <div className="absolute top-0 left-0 right-0 h-[38px] flex items-center justify-center text-[13px] font-semibold text-white/50 pointer-events-none">
+        <div className="flex flex-col h-screen text-foreground/90 font-sans select-none overflow-hidden bg-background/80 backdrop-blur-3xl" style={{ WebkitAppRegion: 'drag' } as any}>
+            <div className="absolute top-0 left-0 right-0 h-[38px] flex items-center justify-center text-[13px] font-semibold text-muted-foreground pointer-events-none">
                 Void Settings
             </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 overflow-hidden" defaultValue="general">
                 <div className="flex justify-center pt-[38px]">
-                    <TabsList className="bg-transparent border-b border-white/10 rounded-none h-auto p-0 gap-4 flex w-full justify-center px-6">
-                        <TabsTrigger value="general" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                    <TabsList className="bg-transparent border-b border-border rounded-none h-auto p-0 gap-4 flex w-full justify-center px-6">
+                        <TabsTrigger value="general" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <Settings className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">General</span>
                         </TabsTrigger>
-                        <TabsTrigger value="extensions" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <TabsTrigger value="extensions" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <Puzzle className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">Extensions</span>
                         </TabsTrigger>
-                        <TabsTrigger value="skills" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <TabsTrigger value="skills" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <FolderGit2 className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">Skills</span>
                         </TabsTrigger>
-                        <TabsTrigger value="ai" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <TabsTrigger value="ai" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <Cpu className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">AI</span>
                         </TabsTrigger>
-                        <TabsTrigger value="advanced" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <TabsTrigger value="advanced" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <Wrench className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">Advanced</span>
                         </TabsTrigger>
-                        <TabsTrigger value="about" className="w-[72px] flex flex-col gap-1.5 px-2 py-3 rounded-t-lg border-b-2 border-transparent data-[state=active]:border-white/90 data-[state=active]:bg-white/5 data-[state=active]:text-white data-[state=inactive]:text-white/40 shadow-none -mb-[1px]" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <TabsTrigger value="about" className={TAB_CLASS} style={{ WebkitAppRegion: 'no-drag' } as any}>
                             <Info className="w-[22px] h-[22px]" />
                             <span className="text-xs font-semibold tracking-wide">About</span>
                         </TabsTrigger>
@@ -198,8 +203,8 @@ const SettingsView: React.FC = () => {
                     {activeTab === 'about' ? (
                         <TabsContent value="about" className="mt-0 outline-none h-full flex items-center justify-center" style={{ minHeight: 180 }}>
                             <div className="flex flex-col items-center gap-2">
-                                <span className="text-white/80 font-semibold tracking-wide">Void Launcher</span>
-                                <span className="text-white/40 text-sm">Version 1.0.0</span>
+                                <span className="text-foreground/80 font-semibold tracking-wide">Void Launcher</span>
+                                <span className="text-muted-foreground text-sm">Version 1.0.0</span>
                             </div>
                         </TabsContent>
                     ) : (
@@ -209,7 +214,7 @@ const SettingsView: React.FC = () => {
                                 <Row label="Startup">
                                     <div className="flex items-center space-x-2 opacity-60">
                                         <Checkbox id="startup" disabled checked={false} />
-                                        <label htmlFor="startup" className="text-[13px] font-medium leading-none cursor-not-allowed text-white/80">Launch Void at login</label>
+                                        <label htmlFor="startup" className="text-[13px] font-medium leading-none cursor-not-allowed text-foreground/80">Launch Void at login</label>
                                     </div>
                                 </Row>
 
@@ -224,11 +229,11 @@ const SettingsView: React.FC = () => {
                                 <Row label="Menu Bar Icon">
                                     <div className="flex items-center space-x-2 opacity-60">
                                         <Checkbox id="menubar" disabled checked={true} />
-                                        <label htmlFor="menubar" className="text-[13px] font-medium leading-none cursor-not-allowed text-white/80">Show Void in menu bar</label>
+                                        <label htmlFor="menubar" className="text-[13px] font-medium leading-none cursor-not-allowed text-foreground/80">Show Void in menu bar</label>
                                     </div>
                                 </Row>
 
-                                <div className="h-[1px] bg-white/10 my-6 w-full max-w-[536px] mx-auto" />
+                                <div className="h-[1px] bg-border my-6 w-full max-w-[536px] mx-auto" />
 
                                 <Row label="Terminal App">
                                     <Select value={settings.terminalApp || 'Terminal'} onValueChange={v => update('terminalApp', v)}>
@@ -247,15 +252,15 @@ const SettingsView: React.FC = () => {
                                 </Row>
 
                                 <Row label="Text Size">
-                                    <div className="inline-flex bg-white/5 p-1 rounded-lg border border-white/5">
+                                    <div className="inline-flex bg-secondary/50 p-1 rounded-lg border border-border">
                                         <button
-                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'small' ? 'bg-white/15 text-white/95 shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'small' ? 'bg-accent text-foreground/95 shadow-sm' : 'text-muted-foreground hover:text-foreground/80'}`}
                                             onClick={() => update('fontSize', 'small')}
                                         >
                                             <span className="text-[13px] font-semibold">Aa</span>
                                         </button>
                                         <button
-                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'medium' ? 'bg-white/15 text-white/95 shadow-sm' : 'text-white/40 hover:text-white/80'}`}
+                                            className={`px-3 py-1 text-sm rounded-md transition-all ${settings.fontSize === 'medium' ? 'bg-accent text-foreground/95 shadow-sm' : 'text-muted-foreground hover:text-foreground/80'}`}
                                             onClick={() => update('fontSize', 'medium')}
                                         >
                                             <span className="text-[15px] font-semibold">Aa</span>
@@ -265,24 +270,25 @@ const SettingsView: React.FC = () => {
 
                                 <Row label="Appearance">
                                     <div className="flex gap-6 mt-1">
-                                        <button className="flex flex-col items-center gap-2 group text-white/40 hover:text-white/80">
-                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-white/30 transition-all">
-                                                <Sun className="w-5 h-5" />
-                                            </div>
-                                            <span className="text-xs font-medium">Light</span>
-                                        </button>
-                                        <button className="flex flex-col items-center gap-2 group text-white/40 hover:text-white/80">
-                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border border-white/10 bg-white/5 group-hover:border-white/30 transition-all">
-                                                <Moon className="w-5 h-5" />
-                                            </div>
-                                            <span className="text-xs font-medium">Dark</span>
-                                        </button>
-                                        <button className="flex flex-col items-center gap-2 text-white/95 font-semibold">
-                                            <div className="w-9 h-9 flex items-center justify-center rounded-full border-2 border-indigo-500/50 bg-indigo-500/15 text-indigo-200 transition-all">
-                                                <Monitor className="w-5 h-5" />
-                                            </div>
-                                            <span className="text-xs">System</span>
-                                        </button>
+                                        {([
+                                            { mode: 'light', icon: Sun, label: 'Light' },
+                                            { mode: 'dark', icon: Moon, label: 'Dark' },
+                                            { mode: 'system', icon: Monitor, label: 'System' },
+                                        ] as const).map(({ mode, icon: Icon, label }) => {
+                                            const active = settings.themeMode === mode
+                                            return (
+                                                <button
+                                                    key={mode}
+                                                    className={`flex flex-col items-center gap-2 group ${active ? 'text-foreground/95 font-semibold' : 'text-muted-foreground hover:text-foreground/80'}`}
+                                                    onClick={() => { update('themeMode', mode); setThemeMode(mode) }}
+                                                >
+                                                    <div className={`w-9 h-9 flex items-center justify-center rounded-full transition-all ${active ? 'border-2 border-indigo-500/50 bg-indigo-500/15 text-indigo-500 dark:text-indigo-200' : 'border border-border bg-secondary/50 group-hover:border-foreground/30'}`}>
+                                                        <Icon className="w-5 h-5" />
+                                                    </div>
+                                                    <span className="text-xs font-medium">{label}</span>
+                                                </button>
+                                            )
+                                        })}
                                     </div>
                                 </Row>
                             </TabsContent>
@@ -300,7 +306,7 @@ const SettingsView: React.FC = () => {
                                 <Row label="Discovered Skills" alignTop>
                                     <div className="grid grid-cols-2 gap-3 w-full">
                                         {skillsList.length === 0 ? (
-                                            <div className="text-white/40 text-[13px] col-span-2">
+                                            <div className="text-muted-foreground text-[13px] col-span-2">
                                                 No skills found in this directory. Add a valid path above. <br />
                                                 <span className="opacity-80 mt-1 block">(Tip: Clone https://github.com/dyike/eino-skills)</span>
                                             </div>
@@ -309,15 +315,15 @@ const SettingsView: React.FC = () => {
                                                 <div
                                                     key={idx}
                                                     title={skill.description || 'No description available in SKILL.md'}
-                                                    className="group flex flex-col justify-start bg-white/5 p-3 rounded-lg border border-white/10 cursor-pointer transition-all hover:bg-white/10 hover:-translate-y-0.5"
+                                                    className="group flex flex-col justify-start bg-secondary/50 p-3 rounded-lg border border-border cursor-pointer transition-all hover:bg-accent hover:-translate-y-0.5"
                                                 >
                                                     <div className="flex items-center gap-2 mb-1.5">
                                                         <FolderGit2 className="w-4 h-4 text-indigo-400 group-hover:text-indigo-300 transition-colors" />
-                                                        <span className="font-semibold text-[14px] text-white/90 truncate">
+                                                        <span className="font-semibold text-[14px] text-foreground/90 truncate">
                                                             {skill.name}
                                                         </span>
                                                     </div>
-                                                    <span className="text-xs text-white/40 break-all line-clamp-2 leading-relaxed">
+                                                    <span className="text-xs text-muted-foreground break-all line-clamp-2 leading-relaxed">
                                                         {skill.description || skill.path}
                                                     </span>
                                                 </div>
@@ -330,10 +336,10 @@ const SettingsView: React.FC = () => {
                             <TabsContent value="ai" className="mt-0 outline-none">
                                 <Row label="Provider">
                                     <Select value={settings.ai.provider} onValueChange={(v: any) => updateAI('provider', v)}>
-                                        <SelectTrigger className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                        <SelectTrigger className={inputClass}>
                                             <SelectValue placeholder="Select AI provider" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white/90">
+                                        <SelectContent className="bg-popover border-border text-popover-foreground">
                                             <SelectItem value="openai">OpenAI</SelectItem>
                                             <SelectItem value="deepseek">DeepSeek</SelectItem>
                                             <SelectItem value="ollama">Ollama</SelectItem>
@@ -344,51 +350,51 @@ const SettingsView: React.FC = () => {
 
                                 {settings.ai.provider === 'openai' && (<>
                                     <Row label="API Key">
-                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiApiKey} onChange={e => updateAI('openaiApiKey', e.target.value)} />
+                                        <Input type="password" placeholder="sk-..." className={inputClass} value={settings.ai.openaiApiKey} onChange={e => updateAI('openaiApiKey', e.target.value)} />
                                     </Row>
                                     <Row label="Model">
-                                        <Input placeholder="gpt-4o-mini" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                        <Input placeholder="gpt-4o-mini" className={inputClass} value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
                                     </Row>
                                 </>)}
 
                                 {settings.ai.provider === 'deepseek' && (<>
                                     <Row label="API Key">
-                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.deepseekApiKey} onChange={e => updateAI('deepseekApiKey', e.target.value)} />
+                                        <Input type="password" placeholder="sk-..." className={inputClass} value={settings.ai.deepseekApiKey} onChange={e => updateAI('deepseekApiKey', e.target.value)} />
                                     </Row>
                                     <Row label="Model">
-                                        <Input placeholder="deepseek-chat" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                        <Input placeholder="deepseek-chat" className={inputClass} value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
                                     </Row>
                                 </>)}
 
                                 {settings.ai.provider === 'ollama' && (<>
                                     <Row label="URL">
-                                        <Input placeholder="http://localhost:11434" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.ollamaBaseUrl} onChange={e => updateAI('ollamaBaseUrl', e.target.value)} />
+                                        <Input placeholder="http://localhost:11434" className={inputClass} value={settings.ai.ollamaBaseUrl} onChange={e => updateAI('ollamaBaseUrl', e.target.value)} />
                                     </Row>
                                     <Row label="Model">
-                                        <Input placeholder="llama3" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
+                                        <Input placeholder="llama3" className={inputClass} value={settings.ai.defaultModel} onChange={e => updateAI('defaultModel', e.target.value)} />
                                     </Row>
                                 </>)}
 
                                 {settings.ai.provider === 'openai-compatible' && (<>
                                     <Row label="Base URL">
-                                        <Input placeholder="https://api.example.com/v1" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleBaseUrl} onChange={e => updateAI('openaiCompatibleBaseUrl', e.target.value)} />
+                                        <Input placeholder="https://api.example.com/v1" className={inputClass} value={settings.ai.openaiCompatibleBaseUrl} onChange={e => updateAI('openaiCompatibleBaseUrl', e.target.value)} />
                                     </Row>
                                     <Row label="API Key">
-                                        <Input type="password" placeholder="sk-..." className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleApiKey} onChange={e => updateAI('openaiCompatibleApiKey', e.target.value)} />
+                                        <Input type="password" placeholder="sk-..." className={inputClass} value={settings.ai.openaiCompatibleApiKey} onChange={e => updateAI('openaiCompatibleApiKey', e.target.value)} />
                                     </Row>
                                     <Row label="Model">
-                                        <Input placeholder="deepseek-chat" className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500" value={settings.ai.openaiCompatibleModel} onChange={e => updateAI('openaiCompatibleModel', e.target.value)} />
+                                        <Input placeholder="deepseek-chat" className={inputClass} value={settings.ai.openaiCompatibleModel} onChange={e => updateAI('openaiCompatibleModel', e.target.value)} />
                                     </Row>
                                 </>)}
                             </TabsContent>
 
                             <TabsContent value="extensions" className="mt-0 outline-none flex items-center justify-center p-16">
-                                <span className="text-white/30 text-sm">Manage your extensions here (Coming Soon)</span>
+                                <span className="text-muted-foreground/60 text-sm">Manage your extensions here (Coming Soon)</span>
                             </TabsContent>
 
                             <TabsContent value="advanced" className="mt-0 outline-none">
                                 <Row label="Data Directory">
-                                    <span className="text-[13px] text-white/60 font-mono tracking-tight bg-white/5 px-3 py-1.5 rounded border border-white/5">~/Library/Application Support/Void</span>
+                                    <span className="text-[13px] text-muted-foreground font-mono tracking-tight bg-secondary/50 px-3 py-1.5 rounded border border-border">~/Library/Application Support/Void</span>
                                 </Row>
                             </TabsContent>
 
@@ -398,12 +404,12 @@ const SettingsView: React.FC = () => {
 
                 {/* Save Banner */}
                 {(activeTab === 'general' || activeTab === 'ai') && (
-                    <div className="border-t border-white/5 bg-white/[0.015] px-8 py-4 flex items-center justify-end gap-4" style={{ WebkitAppRegion: 'no-drag' } as any}>
-                        <span className="text-xs text-white/30">Some changes require a restart</span>
+                    <div className="border-t border-border bg-secondary/20 px-8 py-4 flex items-center justify-end gap-4" style={{ WebkitAppRegion: 'no-drag' } as any}>
+                        <span className="text-xs text-muted-foreground/60">Some changes require a restart</span>
                         <Button
                             variant="secondary"
                             size="sm"
-                            className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-200 border-none"
+                            className="bg-indigo-500/20 hover:bg-indigo-500/30 text-indigo-600 dark:text-indigo-200 border-none"
                             onClick={save}
                             disabled={saving}
                         >
