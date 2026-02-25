@@ -228,10 +228,10 @@ const SettingsView: React.FC = () => {
 
                                 <Row label="Terminal App">
                                     <Select value={settings.terminalApp || 'Terminal'} onValueChange={v => update('terminalApp', v)}>
-                                        <SelectTrigger className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500">
+                                        <SelectTrigger className="w-[280px]">
                                             <SelectValue placeholder="Select terminal" />
                                         </SelectTrigger>
-                                        <SelectContent className="bg-zinc-900 border-zinc-800 text-white/90">
+                                        <SelectContent>
                                             <SelectItem value="Terminal">Terminal</SelectItem>
                                             <SelectItem value="iTerm">iTerm</SelectItem>
                                             <SelectItem value="Warp">Warp</SelectItem>
@@ -286,13 +286,13 @@ const SettingsView: React.FC = () => {
                             <TabsContent value="skills" className="mt-0 outline-none">
                                 <Row label="Skills Path">
                                     <Input
-                                        className="w-[280px] bg-white/5 border-white/10 text-white/90 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        className="w-[280px]"
                                         placeholder="e.g. ~/my-skills"
                                         value={settings.skillsPath || ''}
                                         onChange={e => update('skillsPath', e.target.value)}
                                     />
                                 </Row>
-                                <div className="h-[1px] bg-white/10 my-6 w-full max-w-[536px] mx-auto" />
+                                <div className="h-[1px] bg-border my-6 w-full max-w-[536px] mx-auto" />
                                 <Row label="Discovered Skills" alignTop>
                                     <div className="grid grid-cols-2 gap-3 w-full">
                                         {skillsList.length === 0 ? (
