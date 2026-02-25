@@ -248,6 +248,12 @@ const App: React.FC = () => {
       case 'Escape':
         if (query) { setQuery('') }
         break
+      case ',':
+        if (e.metaKey || e.ctrlKey) {
+          e.preventDefault()
+          SettingsService.OpenSettingsWindow().catch(console.error)
+        }
+        break
     }
   }, [view, showActions, flat, selectedIndex, launchCmd, calcResult, copyCalcResult, query])
 
