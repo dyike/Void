@@ -109,7 +109,7 @@ export class ScriptCommand {
     "title": string;
     "description"?: string;
     "mode": ScriptMode;
-    "iconEmoji"?: string;
+    "icon"?: string;
     "scriptPath": string;
     "arguments"?: Argument[];
     "refreshTime"?: string;

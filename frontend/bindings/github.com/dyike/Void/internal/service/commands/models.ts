@@ -17,7 +17,7 @@ export class CommandInfo {
      * Base64 PNG data URL or empty
      */
     "iconDataUrl"?: string;
-    "iconEmoji"?: string;
+    "icon"?: string;
 
     /**
      * "app" | "settings" | "system" | "snippet" | "file"

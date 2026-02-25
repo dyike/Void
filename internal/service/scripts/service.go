@@ -37,7 +37,7 @@ type ScriptCommand struct {
 	Title       string     `json:"title"`
 	Description string     `json:"description,omitempty"`
 	Mode        ScriptMode `json:"mode"`
-	IconEmoji   string     `json:"iconEmoji,omitempty"`
+	Icon        string     `json:"icon,omitempty"`
 	ScriptPath  string     `json:"scriptPath"`
 	Arguments   []Argument `json:"arguments,omitempty"`
 	RefreshTime string     `json:"refreshTime,omitempty"`
@@ -129,7 +129,7 @@ func (s *Service) CreateScript(name, mode string) (string, error) {
 # @raycast.mode %s
 
 # Optional parameters:
-# @raycast.icon 🚀
+# @raycast.icon Rocket
 # @raycast.packageName Custom Scripts
 # @raycast.description A script command
 
@@ -245,13 +245,13 @@ func parseScriptMetadata(path string) *ScriptCommand {
 		Title:       title,
 		Description: meta["description"],
 		Mode:        mode,
-		IconEmoji:   meta["icon"],
+		Icon:        meta["icon"],
 		ScriptPath:  path,
 		PackageName: meta["packageName"],
 		RefreshTime: meta["refreshTime"],
 	}
-	if cmd.IconEmoji == "" {
-		cmd.IconEmoji = "📜"
+	if cmd.Icon == "" {
+		cmd.Icon = "FileCode"
 	}
 
 	// Parse argument definitions: @raycast.argument1, @raycast.argument2, ...
@@ -345,7 +345,7 @@ func (s *Service) createExampleScripts() {
 # @raycast.schemaVersion 1
 # @raycast.title Who am I
 # @raycast.mode compact
-# @raycast.icon 👤
+# @raycast.icon User
 # @raycast.description Show current user and hostname
 
 echo "$(whoami)@$(hostname)"
@@ -357,7 +357,7 @@ echo "$(whoami)@$(hostname)"
 # @raycast.schemaVersion 1
 # @raycast.title My IP Address
 # @raycast.mode compact
-# @raycast.icon 🌐
+# @raycast.icon Globe
 # @raycast.description Show your local IP address
 
 ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo "No network"
@@ -369,7 +369,7 @@ ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null || echo
 # @raycast.schemaVersion 1
 # @raycast.title Git Status
 # @raycast.mode fullOutput
-# @raycast.icon 🌿
+# @raycast.icon Terminal
 # @raycast.description Show git status of current directory
 
 git -C "$HOME" status --short 2>/dev/null || echo "Not in a git repository"
@@ -381,7 +381,7 @@ git -C "$HOME" status --short 2>/dev/null || echo "Not in a git repository"
 # @raycast.schemaVersion 1
 # @raycast.title Current Time
 # @raycast.mode compact
-# @raycast.icon 🕐
+# @raycast.icon Clock
 # @raycast.description Show current date and time
 
 date "+%Y-%m-%d %H:%M:%S %Z"

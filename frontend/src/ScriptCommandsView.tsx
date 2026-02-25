@@ -4,6 +4,7 @@ import * as ScriptsService from '../bindings/github.com/dyike/Void/internal/serv
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { DynamicIcon } from "./DynamicIcon"
 
 interface Argument {
     name: string
@@ -17,7 +18,7 @@ interface ScriptCommand {
     title: string
     description?: string
     mode: string
-    iconEmoji: string
+    icon: string
     scriptPath: string
     arguments?: Argument[]
     packageName?: string
@@ -141,7 +142,7 @@ const ScriptCommandsView: React.FC = () => {
                                 onClick={() => selectScript(s)}
                                 onDoubleClick={() => run(s)}
                             >
-                                <span className="text-[13px]">{s.iconEmoji}</span>
+                                <DynamicIcon name={s.icon} size={15} className="text-foreground/80 shrink-0" />
                                 <span className="truncate text-[13px] text-foreground/80">{s.title}</span>
                                 {s.packageName && (
                                     <span className="ml-1 text-[10px] text-muted-foreground/60">{s.packageName}</span>
@@ -154,8 +155,9 @@ const ScriptCommandsView: React.FC = () => {
                 <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto p-4">
                     {selected
                         ? <>
-                            <div className="text-sm font-semibold text-foreground/85">
-                                {selected.iconEmoji} {selected.title}
+                            <div className="flex items-center gap-2 text-sm font-semibold text-foreground/85">
+                                <DynamicIcon name={selected.icon} size={20} className="text-foreground/85" />
+                                {selected.title}
                             </div>
                             {selected.description && (
                                 <div className="text-xs text-muted-foreground">

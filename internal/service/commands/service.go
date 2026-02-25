@@ -25,7 +25,7 @@ type CommandInfo struct {
 	Subtitle string `json:"subtitle,omitempty"`
 	// Base64 PNG data URL or empty
 	IconDataURL string `json:"iconDataUrl,omitempty"`
-	IconEmoji   string `json:"iconEmoji,omitempty"`
+	Icon        string `json:"icon,omitempty"`
 	Category    string `json:"category"` // "app" | "settings" | "system" | "snippet" | "file"
 	// App path for apps, bundle ID for settings
 	Path  string  `json:"path,omitempty"`
@@ -211,13 +211,13 @@ func (s *Service) SearchFiles(query string) ([]CommandInfo, error) {
 	var cmds []CommandInfo
 	for _, r := range results {
 		cmds = append(cmds, CommandInfo{
-			ID:        "file-" + slugify(r.Path),
-			Title:     r.Name,
-			Subtitle:  r.Dir,
-			IconEmoji: fileEmoji(r.Path),
-			Category:  "file",
-			Path:      r.Path,
-			Score:     float64(r.Score),
+			ID:       "file-" + slugify(r.Path),
+			Title:    r.Name,
+			Subtitle: r.Dir,
+			Icon:     fileIcon(r.Path),
+			Category: "file",
+			Path:     r.Path,
+			Score:    float64(r.Score),
 		})
 	}
 	return cmds, nil
@@ -240,13 +240,13 @@ func (s *Service) SearchFileContents(query string) ([]CommandInfo, error) {
 			subtitle = fmt.Sprintf("L%d: %s", r.LineNum, r.LineText)
 		}
 		cmds = append(cmds, CommandInfo{
-			ID:        "file-" + slugify(r.Path),
-			Title:     r.Name,
-			Subtitle:  subtitle,
-			IconEmoji: fileEmoji(r.Path),
-			Category:  "file",
-			Path:      r.Path,
-			Score:     float64(r.Score),
+			ID:       "file-" + slugify(r.Path),
+			Title:    r.Name,
+			Subtitle: subtitle,
+			Icon:     fileIcon(r.Path),
+			Category: "file",
+			Path:     r.Path,
+			Score:    float64(r.Score),
 		})
 	}
 	return cmds, nil
@@ -259,85 +259,85 @@ func systemCommands() []CommandInfo {
 		// ── Void built-ins ──────────────────────────
 		{
 			ID: "system-clipboard-manager", Title: "Clipboard History",
-			Subtitle: "Browse your clipboard history", IconEmoji: "📋", Category: "system",
+			Subtitle: "Browse your clipboard history", Icon: "Clipboard", Category: "system",
 		},
 		{
 			ID: "system-ai-chat", Title: "AI Chat",
-			Subtitle: "Chat with AI assistant", IconEmoji: "✨", Category: "system",
+			Subtitle: "Chat with AI assistant", Icon: "Sparkles", Category: "system",
 		},
 		{
 			ID: "system-snippets", Title: "Snippets",
-			Subtitle: "Manage text snippets", IconEmoji: "📝", Category: "system",
+			Subtitle: "Manage text snippets", Icon: "FileText", Category: "system",
 		},
 		// ── macOS system actions ───────────────────
 		{
 			ID: "system-lock-screen", Title: "Lock Screen",
-			Subtitle: "Turn off displays and lock", IconEmoji: "🔒", Category: "system",
+			Subtitle: "Turn off displays and lock", Icon: "Lock", Category: "system",
 		},
 		{
 			ID: "system-sleep", Title: "Sleep",
-			Subtitle: "Put Mac to sleep", IconEmoji: "💤", Category: "system",
+			Subtitle: "Put Mac to sleep", Icon: "Moon", Category: "system",
 		},
 		{
 			ID: "system-empty-trash", Title: "Empty Trash",
-			Subtitle: "Permanently delete trashed files", IconEmoji: "🗑️", Category: "system",
+			Subtitle: "Permanently delete trashed files", Icon: "Trash", Category: "system",
 		},
 		{
 			ID: "system-restart", Title: "Restart",
-			Subtitle: "Restart your Mac", IconEmoji: "🔄", Category: "system",
+			Subtitle: "Restart your Mac", Icon: "RotateCw", Category: "system",
 		},
 		{
 			ID: "system-shutdown", Title: "Shut Down",
-			Subtitle: "Shut down your Mac", IconEmoji: "⏻", Category: "system",
+			Subtitle: "Shut down your Mac", Icon: "Power", Category: "system",
 		},
 		{
 			ID: "system-open-finder", Title: "Open Finder",
-			Subtitle: "Open Finder", IconEmoji: "📂", Category: "system",
+			Subtitle: "Open Finder", Icon: "Folder", Category: "system",
 		},
 		{
 			ID: "system-open-terminal", Title: "Open Terminal",
-			Subtitle: "Open Terminal", IconEmoji: "💻", Category: "system",
+			Subtitle: "Open Terminal", Icon: "Terminal", Category: "system",
 		},
 		// ── Window management ──────────────────────
 		{
 			ID: "window-left-half", Title: "Left Half",
-			Subtitle: "Move window to left half", IconEmoji: "◀️", Category: "system",
+			Subtitle: "Move window to left half", Icon: "ArrowLeft", Category: "system",
 		},
 		{
 			ID: "window-right-half", Title: "Right Half",
-			Subtitle: "Move window to right half", IconEmoji: "▶️", Category: "system",
+			Subtitle: "Move window to right half", Icon: "ArrowRight", Category: "system",
 		},
 		{
 			ID: "window-top-half", Title: "Top Half",
-			Subtitle: "Move window to top half", IconEmoji: "🔼", Category: "system",
+			Subtitle: "Move window to top half", Icon: "ArrowUp", Category: "system",
 		},
 		{
 			ID: "window-bottom-half", Title: "Bottom Half",
-			Subtitle: "Move window to bottom half", IconEmoji: "🔽", Category: "system",
+			Subtitle: "Move window to bottom half", Icon: "ArrowDown", Category: "system",
 		},
 		{
 			ID: "window-top-left", Title: "Top Left Quarter",
-			Subtitle: "Move window to top-left quarter", IconEmoji: "↖️", Category: "system",
+			Subtitle: "Move window to top-left quarter", Icon: "ArrowUpLeft", Category: "system",
 		},
 		{
 			ID: "window-top-right", Title: "Top Right Quarter",
-			Subtitle: "Move window to top-right quarter", IconEmoji: "↗️", Category: "system",
+			Subtitle: "Move window to top-right quarter", Icon: "ArrowUpRight", Category: "system",
 		},
 		{
 			ID: "window-bottom-left", Title: "Bottom Left Quarter",
-			Subtitle: "Move window to bottom-left quarter", IconEmoji: "↙️", Category: "system",
+			Subtitle: "Move window to bottom-left quarter", Icon: "ArrowDownLeft", Category: "system",
 		},
 		{
 			ID: "window-bottom-right", Title: "Bottom Right Quarter",
-			Subtitle: "Move window to bottom-right quarter", IconEmoji: "↘️", Category: "system",
+			Subtitle: "Move window to bottom-right quarter", Icon: "ArrowDownRight", Category: "system",
 		},
 		{
 			ID: "window-maximize", Title: "Maximize",
-			Subtitle: "Maximize window to fill screen", IconEmoji: "⬜", Category: "system",
+			Subtitle: "Maximize window to fill screen", Icon: "Maximize", Category: "system",
 		},
 		{
 			ID: "window-center", Title: "Center Window",
-			Subtitle: "Center window on screen", IconEmoji: "🎯", Category: "system",
+			Subtitle: "Center window on screen", Icon: "Target", Category: "system",
 		},
 	}
 }
@@ -474,12 +474,12 @@ func (s *Service) discoverSettingsPanes() []CommandInfo {
 			seen[id] = true
 			fullPath := filepath.Join(dir, e.Name())
 			results = append(results, CommandInfo{
-				ID:        id,
-				Title:     name,
-				Subtitle:  "System Settings",
-				IconEmoji: "🔧",
-				Category:  "settings",
-				Path:      fullPath,
+				ID:       id,
+				Title:    name,
+				Subtitle: "System Settings",
+				Icon:     "Wrench",
+				Category: "settings",
+				Path:     fullPath,
 			})
 		}
 	}
@@ -613,29 +613,29 @@ func (s *Service) extractIconSips(appPath string) string {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-func fileEmoji(path string) string {
+func fileIcon(path string) string {
 	ext := strings.ToLower(filepath.Ext(path))
 	switch ext {
 	case ".pdf":
-		return "📄"
+		return "FileText"
 	case ".png", ".jpg", ".jpeg", ".gif", ".webp", ".svg":
-		return "🖼️"
+		return "Image"
 	case ".mp3", ".wav", ".flac", ".aac":
-		return "🎵"
+		return "Music"
 	case ".mp4", ".mov", ".avi", ".mkv":
-		return "🎬"
+		return "Video"
 	case ".zip", ".tar", ".gz", ".rar":
-		return "📦"
+		return "Archive"
 	case ".go", ".py", ".js", ".ts", ".rs", ".swift":
-		return "💻"
+		return "FileCode"
 	case ".md", ".txt":
-		return "📝"
+		return "FileText"
 	case ".xlsx", ".csv":
-		return "📊"
+		return "FileSpreadsheet"
 	case ".app":
-		return "🖥️"
+		return "Monitor"
 	default:
-		return "📄"
+		return "File"
 	}
 }
 

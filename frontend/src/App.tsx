@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { Search, X, Clipboard, Sparkles, Settings, ArrowLeft, Loader2, FileText } from 'lucide-react'
+import { Search, X, ArrowLeft, Loader2 } from 'lucide-react'
 import * as CommandsService from '../bindings/github.com/dyike/Void/internal/service/commands/service.js'
 import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculator/service.js'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
@@ -11,6 +11,7 @@ import ScriptCommandsView from './ScriptCommandsView'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { DynamicIcon } from "./DynamicIcon"
 
 // ─── Types ────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ interface CommandInfo {
   title: string
   subtitle?: string
   iconDataUrl?: string
-  iconEmoji?: string
+  icon?: string
   category: 'app' | 'settings' | 'system' | 'file' | 'snippet'
   path?: string
   score?: number
@@ -39,14 +40,6 @@ const CATEGORY_LABELS: Record<string, string> = {
   app: 'Applications',
   settings: 'System Settings',
   file: 'Files',
-}
-
-const SYSTEM_ICONS: Record<string, React.ReactNode> = {
-  'system-clipboard-manager': <Clipboard size={15} />,
-  'system-ai-chat': <Sparkles size={15} />,
-  'system-snippets': <FileText size={15} />,
-  'system-scripts': <FileText size={15} />,
-  'system-settings': <Settings size={15} />,
 }
 
 function useDebounce<T>(value: T, ms: number): T {
@@ -259,12 +252,10 @@ const App: React.FC = () => {
 
   // ─── Icon renderer ─────────────────────────────────────────────────────
   const renderIcon = (cmd: CommandInfo) => {
-    const sys = SYSTEM_ICONS[cmd.id]
-    if (sys) return sys
     if (cmd.iconDataUrl) return (
       <img src={cmd.iconDataUrl} alt="" className="h-full w-full rounded-md object-cover" />
     )
-    return <span className="text-[17px]">{cmd.iconEmoji || '📦'}</span>
+    return <DynamicIcon name={cmd.icon} size={16} className="text-foreground/80 group-aria-selected:text-foreground" />
   }
 
   // ─── Sub-views ─────────────────────────────────────────────────────────
@@ -379,7 +370,7 @@ const App: React.FC = () => {
                     <div
                       className={cn(
                         "flex h-7 w-7 items-center justify-center rounded-md text-[17px]",
-                        SYSTEM_ICONS[cmd.id] ? "bg-indigo-500/20 text-indigo-600 dark:text-indigo-100" : "bg-secondary"
+                        cmd.category === 'system' ? "bg-indigo-500/20 text-indigo-600 dark:text-indigo-100" : "bg-secondary"
                       )}
                     >
                       {renderIcon(cmd)}
