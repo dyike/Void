@@ -127,11 +127,8 @@ const SettingsView: React.FC = () => {
     }, [activeTab, settings?.skillsPath])
 
     useEffect(() => {
-        if (activeTab === 'about') {
-            SettingsService.ResizeSettingsWindow(780, 320).catch(console.error)
-        } else {
-            SettingsService.ResizeSettingsWindow(780, 520).catch(console.error)
-        }
+        const h = activeTab === 'about' ? 280 : 480
+        SettingsService.ResizeSettingsWindow(780, h).catch(console.error)
     }, [activeTab])
 
     const update = <K extends keyof AppSettings>(key: K, value: any) => {
@@ -201,9 +198,9 @@ const SettingsView: React.FC = () => {
 
                 <div className="flex-1 overflow-y-auto w-full" style={{ WebkitAppRegion: 'no-drag' } as any}>
                     {activeTab === 'about' ? (
-                        <TabsContent value="about" className="mt-0 outline-none h-full flex items-center justify-center" style={{ minHeight: 180 }}>
+                        <TabsContent value="about" className="mt-0 outline-none h-full flex items-center justify-center pb-8">
                             <div className="flex flex-col items-center gap-2">
-                                <span className="text-foreground/80 font-semibold tracking-wide">Void Launcher</span>
+                                <span className="text-foreground/80 font-semibold tracking-wide text-base">Void Launcher</span>
                                 <span className="text-muted-foreground text-sm">Version 1.0.0</span>
                             </div>
                         </TabsContent>
