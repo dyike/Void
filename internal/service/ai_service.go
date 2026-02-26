@@ -16,7 +16,7 @@ import (
 	_ "github.com/crosszan/modu/pkg/llm/providers/deepseek"
 	_ "github.com/crosszan/modu/pkg/llm/providers/ollama"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai"
-	_ "github.com/crosszan/modu/pkg/llm/providers/openai_completions"
+	_ "github.com/crosszan/modu/pkg/llm/providers/openai_chat_completions"
 	"github.com/dyike/Void/internal/model"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -77,12 +77,15 @@ func buildModel(ai model.AISettings) (*llm.Model, error) {
 		if baseURL == "" {
 			return nil, fmt.Errorf("openai-compatible base URL is not configured")
 		}
-		os.Setenv("OPENAI_BASE_URL", baseURL)
-		os.Setenv("OPENAI_API_KEY", ai.OpenAICompatibleApiKey)
+		apiKey := ai.OpenAICompatibleApiKey
+		if apiKey == "" {
+			apiKey = "dummy-key" // provide a dummy key since modu requires one
+		}
+		os.Setenv("OPENAI_API_KEY", apiKey)
 		return &llm.Model{
 			ID:       modelID,
 			Provider: llm.Provider(llm.KnownProviderOpenAI),
-			Api:      llm.Api(llm.KnownApiOpenAICompletions),
+			Api:      llm.Api(llm.KnownApiOpenAIChatCompletions),
 			BaseURL:  baseURL,
 		}, nil
 
