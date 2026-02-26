@@ -38,7 +38,7 @@ export function DeleteSnippet(id: string): $CancellablePromise<void> {
 }
 
 /**
- * ExpandSnippet returns the content of the snippet matching the given prefix, or nil.
+ * ExpandSnippet returns the content for a matching prefix, or nil.
  */
 export function ExpandSnippet(prefix: string): $CancellablePromise<string | null> {
     return $Call.ByID(2441676122, prefix);

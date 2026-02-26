@@ -22,7 +22,7 @@ export function ClearHistory(): $CancellablePromise<void> {
 }
 
 /**
- * CopyItem copies the item to clipboard.
+ * CopyItem copies the item to clipboard (alias for PasteItem).
  */
 export function CopyItem(id: string): $CancellablePromise<void> {
     return $Call.ByID(782753444, id);
@@ -45,7 +45,7 @@ export function GetHistory(): $CancellablePromise<model$0.ClipboardItem[]> {
 }
 
 /**
- * PasteItem copies the item to clipboard.
+ * PasteItem copies the item back to the clipboard.
  */
 export function PasteItem(id: string): $CancellablePromise<void> {
     return $Call.ByID(275942866, id);

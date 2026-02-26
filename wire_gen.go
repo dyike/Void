@@ -18,15 +18,21 @@ import (
 
 // InitApp wires everything together given the base data directory.
 func InitApp(dataDir string) (*InitializedApp, error) {
-	settingsService := service.NewSettingsService(dataDir)
+	settingsRepo := repo.NewSettingsRepo(dataDir)
+	settingsService := service.NewSettingsService(settingsRepo)
 	commandRepo := repo.NewCommandRepo(dataDir)
 	commandService := service.NewCommandService(dataDir, settingsService, commandRepo)
-	clipboardService := service.NewClipboardService(dataDir)
+	clipboardRepo := repo.NewClipboardRepo(dataDir)
+	clipboardService := service.NewClipboardService(clipboardRepo)
 	aiService := service.NewAIService(settingsService)
-	snippetService := service.NewSnippetService(dataDir)
-	calculatorService := service.NewCalculatorService()
-	scriptsService := service.NewScriptsService(dataDir)
-	hotkeyService := service.NewHotkeyService()
+	snippetRepo := repo.NewSnippetRepo(dataDir)
+	snippetService := service.NewSnippetService(snippetRepo)
+	calculatorRepo := repo.NewCalculatorRepo()
+	calculatorService := service.NewCalculatorService(calculatorRepo)
+	scriptsRepo := repo.NewScriptsRepo(dataDir)
+	scriptsService := service.NewScriptsService(scriptsRepo)
+	hotkeyRepo := repo.NewHotkeyRepo()
+	hotkeyService := service.NewHotkeyService(hotkeyRepo)
 	dockService := dock.New()
 	manager := window.NewManager()
 	appServices := ProvideAppServices(settingsService, commandService, clipboardService, aiService, snippetService, calculatorService, scriptsService, hotkeyService, dockService, manager)
@@ -57,7 +63,9 @@ type InitializedApp struct {
 }
 
 // ServiceProviderSet aggregates all core service constructors.
-var ServiceProviderSet = wire.NewSet(repo.ProviderSet, service.ProviderSet, window.ProviderSet, dock.New, ProvideAppServices, ProvideInitializedApp)
+var ServiceProviderSet = wire.NewSet(repo.ProviderSet, service.ProviderSet, window.ProviderSet, dock.New, ProvideAppServices,
+	ProvideInitializedApp,
+)
 
 // ProvideAppServices aggregates all services into a single struct.
 func ProvideAppServices(
