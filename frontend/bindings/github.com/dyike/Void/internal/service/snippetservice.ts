@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../model/models.js";
 
 /**
  * CopyToClipboard copies the snippet content to the macOS clipboard.
@@ -24,7 +24,7 @@ export function CopyToClipboard(id: string): $CancellablePromise<void> {
 /**
  * CreateSnippet adds a new snippet.
  */
-export function CreateSnippet(name: string, content: string, prefix: string, tags: string[]): $CancellablePromise<$models.Snippet | null> {
+export function CreateSnippet(name: string, content: string, prefix: string, tags: string[]): $CancellablePromise<model$0.Snippet | null> {
     return $Call.ByID(1791766726, name, content, prefix, tags).then(($result: any) => {
         return $$createType1($result);
     });
@@ -47,7 +47,7 @@ export function ExpandSnippet(prefix: string): $CancellablePromise<string | null
 /**
  * FindByPrefix returns the first snippet whose prefix matches.
  */
-export function FindByPrefix(prefix: string): $CancellablePromise<$models.Snippet | null> {
+export function FindByPrefix(prefix: string): $CancellablePromise<model$0.Snippet | null> {
     return $Call.ByID(2188707543, prefix).then(($result: any) => {
         return $$createType1($result);
     });
@@ -65,7 +65,7 @@ export function GetAllPrefixes(): $CancellablePromise<string[]> {
 /**
  * GetSnippet returns a snippet by ID.
  */
-export function GetSnippet(id: string): $CancellablePromise<$models.Snippet | null> {
+export function GetSnippet(id: string): $CancellablePromise<model$0.Snippet | null> {
     return $Call.ByID(84779580, id).then(($result: any) => {
         return $$createType1($result);
     });
@@ -74,7 +74,7 @@ export function GetSnippet(id: string): $CancellablePromise<$models.Snippet | nu
 /**
  * GetSnippets returns all snippets, optionally filtered by a search query.
  */
-export function GetSnippets(query: string): $CancellablePromise<$models.Snippet[]> {
+export function GetSnippets(query: string): $CancellablePromise<model$0.Snippet[]> {
     return $Call.ByID(1131840093, query).then(($result: any) => {
         return $$createType3($result);
     });
@@ -83,14 +83,14 @@ export function GetSnippets(query: string): $CancellablePromise<$models.Snippet[
 /**
  * UpdateSnippet modifies an existing snippet.
  */
-export function UpdateSnippet(id: string, name: string, content: string, prefix: string, tags: string[]): $CancellablePromise<$models.Snippet | null> {
+export function UpdateSnippet(id: string, name: string, content: string, prefix: string, tags: string[]): $CancellablePromise<model$0.Snippet | null> {
     return $Call.ByID(21161209, id, name, content, prefix, tags).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = $models.Snippet.createFrom;
+const $$createType0 = model$0.Snippet.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
 const $$createType2 = $Create.Array($Create.Any);
 const $$createType3 = $Create.Array($$createType0);

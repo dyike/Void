@@ -11,23 +11,14 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-// Snippet is a reusable text template.
-type Snippet struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	Content   string   `json:"content"`
-	Prefix    string   `json:"prefix,omitempty"`
-	Tags      []string `json:"tags,omitempty"`
-	CreatedAt int64    `json:"createdAt"`
-	UpdatedAt int64    `json:"updatedAt"`
-}
+	"github.com/dyike/Void/internal/model"
+)
 
 // SnippetService manages text snippets.
 type SnippetService struct {
 	mu       sync.RWMutex
-	snippets []Snippet
+	snippets []model.Snippet
 	path     string
 }
 
@@ -41,18 +32,18 @@ func NewSnippetService(dataDir string) *SnippetService {
 }
 
 // GetSnippets returns all snippets, optionally filtered by a search query.
-func (s *SnippetService) GetSnippets(query string) []Snippet {
+func (s *SnippetService) GetSnippets(query string) []model.Snippet {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
 	if query == "" {
-		result := make([]Snippet, len(s.snippets))
+		result := make([]model.Snippet, len(s.snippets))
 		copy(result, s.snippets)
 		return result
 	}
 
 	q := strings.ToLower(query)
-	var result []Snippet
+	var result []model.Snippet
 	for _, sn := range s.snippets {
 		if strings.Contains(strings.ToLower(sn.Name), q) ||
 			strings.Contains(strings.ToLower(sn.Content), q) ||
@@ -64,7 +55,7 @@ func (s *SnippetService) GetSnippets(query string) []Snippet {
 }
 
 // GetSnippet returns a snippet by ID.
-func (s *SnippetService) GetSnippet(id string) (*Snippet, error) {
+func (s *SnippetService) GetSnippet(id string) (*model.Snippet, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, sn := range s.snippets {
@@ -77,12 +68,12 @@ func (s *SnippetService) GetSnippet(id string) (*Snippet, error) {
 }
 
 // CreateSnippet adds a new snippet.
-func (s *SnippetService) CreateSnippet(name, content, prefix string, tags []string) (*Snippet, error) {
+func (s *SnippetService) CreateSnippet(name, content, prefix string, tags []string) (*model.Snippet, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	now := time.Now().UnixMilli()
-	sn := Snippet{
+	sn := model.Snippet{
 		ID:        snippetNewID(),
 		Name:      name,
 		Content:   content,
@@ -91,13 +82,13 @@ func (s *SnippetService) CreateSnippet(name, content, prefix string, tags []stri
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	s.snippets = append([]Snippet{sn}, s.snippets...)
+	s.snippets = append([]model.Snippet{sn}, s.snippets...)
 	s.save()
 	return &sn, nil
 }
 
 // UpdateSnippet modifies an existing snippet.
-func (s *SnippetService) UpdateSnippet(id, name, content, prefix string, tags []string) (*Snippet, error) {
+func (s *SnippetService) UpdateSnippet(id, name, content, prefix string, tags []string) (*model.Snippet, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -132,7 +123,7 @@ func (s *SnippetService) DeleteSnippet(id string) error {
 }
 
 // FindByPrefix returns the first snippet whose prefix matches.
-func (s *SnippetService) FindByPrefix(prefix string) *Snippet {
+func (s *SnippetService) FindByPrefix(prefix string) *model.Snippet {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, sn := range s.snippets {
@@ -182,7 +173,7 @@ func (s *SnippetService) load() {
 	if err != nil {
 		return
 	}
-	var snippets []Snippet
+	var snippets []model.Snippet
 	if err := json.Unmarshal(data, &snippets); err != nil {
 		return
 	}

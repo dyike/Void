@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../model/models.js";
 
 /**
  * GetGlobalHotkey returns the persisted global hotkey spec string.
@@ -24,7 +24,7 @@ export function GetGlobalHotkey(): $CancellablePromise<string> {
 /**
  * GetSettings returns the current settings.
  */
-export function GetSettings(): $CancellablePromise<$models.AppSettings | null> {
+export function GetSettings(): $CancellablePromise<model$0.AppSettings | null> {
     return $Call.ByID(718917688).then(($result: any) => {
         return $$createType1($result);
     });
@@ -33,7 +33,7 @@ export function GetSettings(): $CancellablePromise<$models.AppSettings | null> {
 /**
  * GetSkills scans the configured SkillsPath for directories and returns them.
  */
-export function GetSkills(): $CancellablePromise<$models.Skill[]> {
+export function GetSkills(): $CancellablePromise<model$0.Skill[]> {
     return $Call.ByID(2404657679).then(($result: any) => {
         return $$createType3($result);
     });
@@ -61,7 +61,7 @@ export function ResizeSettingsWindow(width: number, height: number): $Cancellabl
 /**
  * SaveSettings merges a patch into the current settings and persists.
  */
-export function SaveSettings(updated: $models.AppSettings): $CancellablePromise<$models.AppSettings | null> {
+export function SaveSettings(updated: model$0.AppSettings): $CancellablePromise<model$0.AppSettings | null> {
     return $Call.ByID(4277396547, updated).then(($result: any) => {
         return $$createType1($result);
     });
@@ -91,7 +91,7 @@ export function SetToggleSystemTrayFunc(fn: any): $CancellablePromise<void> {
 }
 
 // Private type creation functions
-const $$createType0 = $models.AppSettings.createFrom;
+const $$createType0 = model$0.AppSettings.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $models.Skill.createFrom;
+const $$createType2 = model$0.Skill.createFrom;
 const $$createType3 = $Create.Array($$createType2);

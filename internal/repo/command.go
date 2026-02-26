@@ -13,7 +13,7 @@ import (
 	"time"
 
 	"github.com/dyike/Void/internal/model"
-	"github.com/dyike/Void/internal/service/filesearch"
+	"github.com/dyike/Void/internal/repo/filesearch"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 

@@ -3,53 +3,39 @@ package service
 import (
 	"fmt"
 	"math"
-	"net/http"
 	"os/exec"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"github.com/dyike/Void/internal/model"
 )
 
 // CalculatorService provides expression evaluation and unit conversion.
-type CalculatorService struct {
-	httpClient *http.Client
-}
+type CalculatorService struct{}
 
 // NewCalculatorService creates a new calculator service.
 func NewCalculatorService() *CalculatorService {
-	return &CalculatorService{
-		httpClient: &http.Client{Timeout: 5_000_000_000},
-	}
-}
-
-// CalcResult holds the evaluation output.
-type CalcResult struct {
-	Input       string `json:"input"`
-	InputLabel  string `json:"inputLabel,omitempty"`
-	Result      string `json:"result"`
-	ResultLabel string `json:"resultLabel,omitempty"`
-	IsValid     bool   `json:"isValid"`
+	return &CalculatorService{}
 }
 
 // Evaluate evaluates a math expression and returns the result.
-func (s *CalculatorService) Evaluate(expr string) (*CalcResult, error) {
+func (s *CalculatorService) Evaluate(expr string) (*model.CalcResult, error) {
 	expr = strings.TrimSpace(expr)
 	if expr == "" {
-		return &CalcResult{Input: expr, IsValid: false}, nil
+		return &model.CalcResult{Input: expr, IsValid: false}, nil
 	}
 
 	if res := tryUnitConversion(expr); res != nil {
 		res.IsValid = true
 		return res, nil
 	}
-
 	if res := tryTempConversion(expr); res != nil {
 		res.IsValid = true
 		return res, nil
 	}
-
 	if res, ok := evalMath(expr); ok {
-		return &CalcResult{
+		return &model.CalcResult{
 			Input:       expr,
 			InputLabel:  "Expression",
 			Result:      formatNumber(res),
@@ -63,11 +49,10 @@ func (s *CalculatorService) Evaluate(expr string) (*CalcResult, error) {
 	if err == nil {
 		r := strings.TrimSpace(string(out))
 		if r != "" {
-			return &CalcResult{Input: expr, Result: r, IsValid: true}, nil
+			return &model.CalcResult{Input: expr, Result: r, IsValid: true}, nil
 		}
 	}
-
-	return &CalcResult{Input: expr, IsValid: false}, nil
+	return &model.CalcResult{Input: expr, IsValid: false}, nil
 }
 
 // IsLikelyExpression returns true if input looks like a math/conversion.
@@ -76,22 +61,18 @@ func (s *CalculatorService) IsLikelyExpression(input string) bool {
 	if len(input) < 2 {
 		return false
 	}
-
 	lc := strings.ToLower(input)
 	for _, kw := range []string{" to ", " in ", " as "} {
 		if strings.Contains(lc, kw) {
 			return true
 		}
 	}
-
 	for _, fn := range []string{"sqrt", "abs", "sin", "cos", "tan", "log", "exp", "pow"} {
 		if strings.Contains(lc, fn+"(") {
 			return true
 		}
 	}
-
-	hasDigit := false
-	hasOp := false
+	hasDigit, hasOp := false, false
 	for _, r := range input {
 		if unicode.IsDigit(r) {
 			hasDigit = true
@@ -195,7 +176,6 @@ func init() {
 
 func parseConversionQuery(q string) (value float64, from, to string, ok bool) {
 	q = strings.TrimSuffix(strings.TrimSpace(q), "?")
-
 	for _, kw := range []string{" to ", " in ", " as ", "="} {
 		idx := strings.Index(strings.ToLower(q), kw)
 		if idx < 0 {
@@ -206,7 +186,6 @@ func parseConversionQuery(q string) (value float64, from, to string, ok bool) {
 		if left == "" || right == "" {
 			continue
 		}
-
 		numEnd := 0
 		for numEnd < len(left) {
 			c := left[numEnd]
@@ -219,33 +198,27 @@ func parseConversionQuery(q string) (value float64, from, to string, ok bool) {
 		if numEnd == 0 {
 			continue
 		}
-
-		numStr := strings.ReplaceAll(left[:numEnd], ",", "")
-		val, err := strconv.ParseFloat(numStr, 64)
+		val, err := strconv.ParseFloat(strings.ReplaceAll(left[:numEnd], ",", ""), 64)
 		if err != nil {
 			continue
 		}
-
-		fromUnit := strings.TrimSpace(left[numEnd:])
-		return val, strings.ToLower(fromUnit), strings.ToLower(right), true
+		return val, strings.ToLower(strings.TrimSpace(left[numEnd:])), strings.ToLower(right), true
 	}
 	return 0, "", "", false
 }
 
-func tryUnitConversion(q string) *CalcResult {
+func tryUnitConversion(q string) *model.CalcResult {
 	value, from, to, ok := parseConversionQuery(q)
 	if !ok {
 		return nil
 	}
-
 	fromM, fOk := unitLookup[from]
 	toM, tOk := unitLookup[to]
 	if !fOk || !tOk || fromM.catName != toM.catName {
 		return nil
 	}
-
 	result := value * fromM.toBase / toM.toBase
-	return &CalcResult{
+	return &model.CalcResult{
 		Input:       fmt.Sprintf("%s %s", formatNumber(value), fromM.symbol),
 		InputLabel:  fromM.label,
 		Result:      fmt.Sprintf("%s %s", formatNumber(result), toM.symbol),
@@ -272,7 +245,7 @@ var tempAliases = map[string]tempKey{
 var tempSymbols = map[tempKey]string{tempC: "°C", tempF: "°F", tempK: "K"}
 var tempLabels = map[tempKey]string{tempC: "Celsius", tempF: "Fahrenheit", tempK: "Kelvin"}
 
-func tryTempConversion(q string) *CalcResult {
+func tryTempConversion(q string) *model.CalcResult {
 	value, from, to, ok := parseConversionQuery(q)
 	if !ok {
 		return nil
@@ -300,7 +273,7 @@ func tryTempConversion(q string) *CalcResult {
 	case tempK:
 		result = celsius + 273.15
 	}
-	return &CalcResult{
+	return &model.CalcResult{
 		Input:       fmt.Sprintf("%s %s", formatNumber(value), tempSymbols[fromT]),
 		InputLabel:  tempLabels[fromT],
 		Result:      fmt.Sprintf("%s %s", formatNumber(result), tempSymbols[toT]),
@@ -313,15 +286,10 @@ func tryTempConversion(q string) *CalcResult {
 func evalMath(expr string) (float64, bool) {
 	e := strings.ReplaceAll(strings.TrimSpace(expr), " ", "")
 	val, pos, ok := parseMath(e, 0)
-	if !ok || pos != len(e) {
-		return 0, false
-	}
-	return val, true
+	return val, ok && pos == len(e)
 }
 
-func parseMath(e string, pos int) (float64, int, bool) {
-	return parseAS(e, pos)
-}
+func parseMath(e string, pos int) (float64, int, bool) { return parseAS(e, pos) }
 
 func parseAS(e string, pos int) (float64, int, bool) {
 	left, pos, ok := parseMD(e, pos)
@@ -426,8 +394,7 @@ func parsePrimary(e string, pos int) (float64, int, bool) {
 		}
 		return v, np + 1, true
 	}
-	end := pos
-	hasDot := false
+	end, hasDot := pos, false
 	for end < len(e) && (e[end] >= '0' && e[end] <= '9' || (!hasDot && e[end] == '.')) {
 		if e[end] == '.' {
 			hasDot = true

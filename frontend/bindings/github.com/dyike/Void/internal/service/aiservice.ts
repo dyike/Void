@@ -12,26 +12,26 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../model/models.js";
 
 /**
  * Ask sends a prompt using the modu Agent and returns the full response.
  */
-export function Ask(prompt: string): $CancellablePromise<$models.AskResult | null> {
+export function Ask(prompt: string): $CancellablePromise<model$0.AskResult | null> {
     return $Call.ByID(4201348025, prompt).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 /**
- * AskWithHistory uses only the last user message (modu manages history internally).
+ * AskWithHistory uses only the last user message.
  */
-export function AskWithHistory(messages: { [_ in string]?: any }[]): $CancellablePromise<$models.AskResult | null> {
+export function AskWithHistory(messages: { [_ in string]?: any }[]): $CancellablePromise<model$0.AskResult | null> {
     return $Call.ByID(1989577175, messages).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = $models.AskResult.createFrom;
+const $$createType0 = model$0.AskResult.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

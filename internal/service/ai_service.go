@@ -17,27 +17,9 @@ import (
 	_ "github.com/crosszan/modu/pkg/llm/providers/ollama"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai"
 	_ "github.com/crosszan/modu/pkg/llm/providers/openai_completions"
+	"github.com/dyike/Void/internal/model"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
-
-// AskResult holds the completed AI response.
-type AskResult struct {
-	Content string `json:"content"`
-	Error   string `json:"error,omitempty"`
-}
-
-// AIEvent represents a unified streaming event sent to the frontend.
-type AIEvent struct {
-	Type      string `json:"type"`
-	Content   string `json:"content,omitempty"`
-	Name      string `json:"name,omitempty"`
-	Args      string `json:"args,omitempty"`
-	Result    string `json:"result,omitempty"`
-	IsError   bool   `json:"isError,omitempty"`
-	Turn      int    `json:"turn,omitempty"`
-	Seq       int64  `json:"seq"`
-	Timestamp int64  `json:"timestamp"`
-}
 
 // AIService handles AI inference.
 type AIService struct {
@@ -49,7 +31,7 @@ func NewAIService(settingsSvc *SettingsService) *AIService {
 	return &AIService{settings: settingsSvc}
 }
 
-func buildModel(ai AISettings) (*llm.Model, error) {
+func buildModel(ai model.AISettings) (*llm.Model, error) {
 	modelID := ai.DefaultModel
 
 	switch ai.Provider {
@@ -122,24 +104,23 @@ func buildModel(ai AISettings) (*llm.Model, error) {
 }
 
 // Ask sends a prompt using the modu Agent and returns the full response.
-func (s *AIService) Ask(prompt string) (*AskResult, error) {
+func (s *AIService) Ask(prompt string) (*model.AskResult, error) {
 	cfg, err := s.settings.GetSettings()
 	if err != nil {
-		log.Printf("[AI] failed to load settings: %v", err)
-		return &AskResult{Error: "Failed to load settings: " + err.Error()}, nil
+		return &model.AskResult{Error: "Failed to load settings: " + err.Error()}, nil
 	}
 	ai := cfg.AI
 	if !ai.Enabled {
-		return &AskResult{Error: "AI is disabled. Please enable it in Settings."}, nil
+		return &model.AskResult{Error: "AI is disabled. Please enable it in Settings."}, nil
 	}
 
-	model, err := buildModel(ai)
+	m, err := buildModel(ai)
 	if err != nil {
 		log.Printf("[AI] buildModel error: %v", err)
-		return &AskResult{Error: err.Error()}, nil
+		return &model.AskResult{Error: err.Error()}, nil
 	}
 
-	log.Printf("[AI] Starting agent with model=%s provider=%s api=%s", model.ID, model.Provider, model.Api)
+	log.Printf("[AI] Starting agent with model=%s provider=%s api=%s", m.ID, m.Provider, m.Api)
 
 	cwd, _ := os.UserHomeDir()
 	agentOpts := agent.AgentOptions{
@@ -161,12 +142,10 @@ func (s *AIService) Ask(prompt string) (*AskResult, error) {
 				"# Environment\n" +
 				"- Operating system: macOS\n" +
 				"- Working directory: " + cwd,
-			Model: model,
+			Model: m,
 			Tools: tools.AllTools(cwd),
 		},
-		GetAPIKey: func(p string) (string, error) {
-			return "", nil
-		},
+		GetAPIKey: func(p string) (string, error) { return "", nil },
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
@@ -175,10 +154,7 @@ func (s *AIService) Ask(prompt string) (*AskResult, error) {
 	turnCount := 0
 	var seq int64
 	a := agent.NewAgent(agentOpts)
-
-	nextSeq := func() int64 {
-		return atomic.AddInt64(&seq, 1)
-	}
+	nextSeq := func() int64 { return atomic.AddInt64(&seq, 1) }
 
 	a.Subscribe(func(e agent.AgentEvent) {
 		app := application.Get()
@@ -188,50 +164,33 @@ func (s *AIService) Ask(prompt string) (*AskResult, error) {
 		switch e.Type {
 		case agent.EventTypeTurnStart:
 			turnCount++
-			log.Printf("[AI] turn %d", turnCount)
 			if turnCount > 10 {
-				log.Printf("[AI] turn limit reached, aborting")
 				cancel()
 			}
-			app.Event.Emit("AIEvent", AIEvent{Type: "turn", Turn: turnCount, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
+			app.Event.Emit("AIEvent", model.AIEvent{Type: "turn", Turn: turnCount, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		case agent.EventTypeMessageUpdate:
 			if e.AssistantMessageEvent != nil && e.AssistantMessageEvent.Delta != "" {
-				app.Event.Emit("AIEvent", AIEvent{Type: "delta", Content: e.AssistantMessageEvent.Delta, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
+				app.Event.Emit("AIEvent", model.AIEvent{Type: "delta", Content: e.AssistantMessageEvent.Delta, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 			}
 		case agent.EventTypeToolExecutionStart:
 			argsJSON, _ := json.Marshal(e.Args)
-			app.Event.Emit("AIEvent", AIEvent{
-				Type:      "tool_start",
-				Name:      e.ToolName,
-				Args:      string(argsJSON),
-				Seq:       nextSeq(),
-				Timestamp: time.Now().UnixMilli(),
-			})
+			app.Event.Emit("AIEvent", model.AIEvent{Type: "tool_start", Name: e.ToolName, Args: string(argsJSON), Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		case agent.EventTypeToolExecutionEnd:
 			resultJSON, _ := json.Marshal(e.Result)
-			app.Event.Emit("AIEvent", AIEvent{
-				Type:      "tool_end",
-				Name:      e.ToolName,
-				Result:    string(resultJSON),
-				IsError:   e.IsError,
-				Seq:       nextSeq(),
-				Timestamp: time.Now().UnixMilli(),
-			})
+			app.Event.Emit("AIEvent", model.AIEvent{Type: "tool_end", Name: e.ToolName, Result: string(resultJSON), IsError: e.IsError, Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		case agent.EventTypeAgentEnd:
-			app.Event.Emit("AIEvent", AIEvent{Type: "done", Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
+			app.Event.Emit("AIEvent", model.AIEvent{Type: "done", Seq: nextSeq(), Timestamp: time.Now().UnixMilli()})
 		}
 	})
 
-	log.Printf("[AI] Prompting agent: %q", prompt)
 	if err := a.Prompt(ctx, prompt); err != nil {
-		log.Printf("[AI] Prompt error: %v", err)
-		return &AskResult{Error: err.Error()}, nil
+		return &model.AskResult{Error: err.Error()}, nil
 	}
 	a.WaitForIdle()
 
 	state := a.GetState()
 	if state.Error != "" {
-		return &AskResult{Error: state.Error}, nil
+		return &model.AskResult{Error: state.Error}, nil
 	}
 
 	var finalContent strings.Builder
@@ -255,18 +214,17 @@ func (s *AIService) Ask(prompt string) (*AskResult, error) {
 	if result == "" {
 		result = "(No response received. Check the Go console for error details.)"
 	}
-
-	return &AskResult{Content: result}, nil
+	return &model.AskResult{Content: result}, nil
 }
 
-// AskWithHistory uses only the last user message (modu manages history internally).
-func (s *AIService) AskWithHistory(messages []map[string]interface{}) (*AskResult, error) {
+// AskWithHistory uses only the last user message.
+func (s *AIService) AskWithHistory(messages []map[string]interface{}) (*model.AskResult, error) {
 	if len(messages) == 0 {
-		return &AskResult{Error: "no messages"}, nil
+		return &model.AskResult{Error: "no messages"}, nil
 	}
 	last, _ := messages[len(messages)-1]["content"].(string)
 	if last == "" {
-		return &AskResult{Error: "empty message"}, nil
+		return &model.AskResult{Error: "empty message"}, nil
 	}
 	return s.Ask(last)
 }

@@ -12,12 +12,12 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../model/models.js";
 
 /**
  * Evaluate evaluates a math expression and returns the result.
  */
-export function Evaluate(expr: string): $CancellablePromise<$models.CalcResult | null> {
+export function Evaluate(expr: string): $CancellablePromise<model$0.CalcResult | null> {
     return $Call.ByID(466154241, expr).then(($result: any) => {
         return $$createType1($result);
     });
@@ -31,5 +31,5 @@ export function IsLikelyExpression(input: string): $CancellablePromise<boolean> 
 }
 
 // Private type creation functions
-const $$createType0 = $models.CalcResult.createFrom;
+const $$createType0 = model$0.CalcResult.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);

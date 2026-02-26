@@ -17,13 +17,3 @@ export {
     SettingsService,
     SnippetService
 };
-
-export {
-    AISettings,
-    AppSettings,
-    AskResult,
-    CalcResult,
-    ClipboardItem,
-    Skill,
-    Snippet
-} from "./models.js";

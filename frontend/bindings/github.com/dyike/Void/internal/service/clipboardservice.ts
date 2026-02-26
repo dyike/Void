@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../model/models.js";
 
 /**
  * ClearHistory removes all clipboard history.
@@ -38,7 +38,7 @@ export function DeleteItem(id: string): $CancellablePromise<void> {
 /**
  * GetHistory returns all clipboard history items (newest first).
  */
-export function GetHistory(): $CancellablePromise<$models.ClipboardItem[]> {
+export function GetHistory(): $CancellablePromise<model$0.ClipboardItem[]> {
     return $Call.ByID(3037884842).then(($result: any) => {
         return $$createType1($result);
     });
@@ -66,5 +66,5 @@ export function Stop(): $CancellablePromise<void> {
 }
 
 // Private type creation functions
-const $$createType0 = $models.ClipboardItem.createFrom;
+const $$createType0 = model$0.ClipboardItem.createFrom;
 const $$createType1 = $Create.Array($$createType0);

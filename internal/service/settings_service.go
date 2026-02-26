@@ -9,47 +9,17 @@ import (
 	"sync"
 
 	"github.com/dyike/Void/internal/autostart"
+	"github.com/dyike/Void/internal/model"
 )
 
-// AISettings holds AI provider configuration.
-type AISettings struct {
-	Provider                string `json:"provider"`
-	OpenAIApiKey            string `json:"openaiApiKey"`
-	AnthropicApiKey         string `json:"anthropicApiKey"`
-	OllamaBaseUrl           string `json:"ollamaBaseUrl"`
-	DefaultModel            string `json:"defaultModel"`
-	DeepSeekApiKey          string `json:"deepseekApiKey"`
-	OpenAICompatibleBaseUrl string `json:"openaiCompatibleBaseUrl"`
-	OpenAICompatibleApiKey  string `json:"openaiCompatibleApiKey"`
-	OpenAICompatibleModel   string `json:"openaiCompatibleModel"`
-	Enabled                 bool   `json:"enabled"`
-}
-
-// AppSettings is the persisted application configuration.
-type AppSettings struct {
-	GlobalShortcut   string            `json:"globalShortcut"`
-	PinnedCommands   []string          `json:"pinnedCommands"`
-	RecentCommands   []string          `json:"recentCommands"`
-	DisabledCommands []string          `json:"disabledCommands"`
-	CommandHotkeys   map[string]string `json:"commandHotkeys"`
-	FontSize         string            `json:"fontSize"`
-	BaseColor        string            `json:"baseColor"`
-	TerminalApp      string            `json:"terminalApp"`
-	SkillsPath       string            `json:"skillsPath"`
-	ThemeMode        string            `json:"themeMode"`
-	LaunchAtLogin    bool              `json:"launchAtLogin"`
-	ShowInMenuBar    bool              `json:"showInMenuBar"`
-	AI               AISettings        `json:"ai"`
-}
-
-var defaultAI = AISettings{
+var defaultAI = model.AISettings{
 	Provider:      "openai",
 	OllamaBaseUrl: "http://localhost:11434",
 	DefaultModel:  "gpt-4o-mini",
 	Enabled:       true,
 }
 
-var defaultSettings = AppSettings{
+var defaultSettings = model.AppSettings{
 	GlobalShortcut:   "option+space",
 	PinnedCommands:   []string{},
 	RecentCommands:   []string{},
@@ -68,7 +38,7 @@ var defaultSettings = AppSettings{
 // SettingsService manages app settings.
 type SettingsService struct {
 	mu                   sync.RWMutex
-	cache                *AppSettings
+	cache                *model.AppSettings
 	path                 string
 	openSettingsFunc     func()
 	resizeSettingsFunc   func(width, height int)
@@ -78,9 +48,7 @@ type SettingsService struct {
 
 // NewSettingsService creates a new settings service.
 func NewSettingsService(dataDir string) *SettingsService {
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		// best effort
-	}
+	_ = os.MkdirAll(dataDir, 0755)
 	return &SettingsService{
 		path: filepath.Join(dataDir, "settings.json"),
 	}
@@ -121,7 +89,7 @@ func (s *SettingsService) ResizeSettingsWindow(width, height int) {
 }
 
 // GetSettings returns the current settings.
-func (s *SettingsService) GetSettings() (*AppSettings, error) {
+func (s *SettingsService) GetSettings() (*model.AppSettings, error) {
 	s.mu.RLock()
 	if s.cache != nil {
 		cp := *s.cache
@@ -132,7 +100,6 @@ func (s *SettingsService) GetSettings() (*AppSettings, error) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
-
 	settings := s.load()
 	s.cache = settings
 	cp := *settings
@@ -140,7 +107,7 @@ func (s *SettingsService) GetSettings() (*AppSettings, error) {
 }
 
 // SaveSettings merges a patch into the current settings and persists.
-func (s *SettingsService) SaveSettings(updated AppSettings) (*AppSettings, error) {
+func (s *SettingsService) SaveSettings(updated model.AppSettings) (*model.AppSettings, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -226,7 +193,7 @@ func (s *SettingsService) ResetCache() {
 	s.cache = nil
 }
 
-func (s *SettingsService) load() *AppSettings {
+func (s *SettingsService) load() *model.AppSettings {
 	data, err := os.ReadFile(s.path)
 	if err != nil {
 		cp := defaultSettings
@@ -270,21 +237,14 @@ func (s *SettingsService) load() *AppSettings {
 	return &parsed
 }
 
-// Skill represents a found skill directory.
-type Skill struct {
-	Name        string `json:"name"`
-	Path        string `json:"path"`
-	Description string `json:"description"`
-}
-
 // GetSkills scans the configured SkillsPath for directories and returns them.
-func (s *SettingsService) GetSkills() ([]Skill, error) {
+func (s *SettingsService) GetSkills() ([]model.Skill, error) {
 	st, err := s.GetSettings()
 	if err != nil {
 		return nil, err
 	}
 	if st.SkillsPath == "" {
-		return []Skill{}, nil
+		return []model.Skill{}, nil
 	}
 
 	skillsPath := st.SkillsPath
@@ -297,34 +257,29 @@ func (s *SettingsService) GetSkills() ([]Skill, error) {
 
 	entries, err := os.ReadDir(skillsPath)
 	if err != nil {
-		return []Skill{}, nil
+		return []model.Skill{}, nil
 	}
 
-	var skills []Skill
+	var skills []model.Skill
 	for _, entry := range entries {
-		if entry.IsDir() {
-			if strings.HasPrefix(entry.Name(), ".") {
-				continue
-			}
-			skillPath := filepath.Join(skillsPath, entry.Name())
-			desc := ""
-			mdPath := filepath.Join(skillPath, "SKILL.md")
-			mdData, err := os.ReadFile(mdPath)
-			if err == nil {
-				lines := strings.Split(string(mdData), "\n")
-				for _, line := range lines {
-					if strings.HasPrefix(line, "description:") {
-						desc = strings.TrimSpace(strings.TrimPrefix(line, "description:"))
-						break
-					}
+		if !entry.IsDir() || strings.HasPrefix(entry.Name(), ".") {
+			continue
+		}
+		skillPath := filepath.Join(skillsPath, entry.Name())
+		desc := ""
+		if mdData, err := os.ReadFile(filepath.Join(skillPath, "SKILL.md")); err == nil {
+			for _, line := range strings.Split(string(mdData), "\n") {
+				if strings.HasPrefix(line, "description:") {
+					desc = strings.TrimSpace(strings.TrimPrefix(line, "description:"))
+					break
 				}
 			}
-			skills = append(skills, Skill{
-				Name:        entry.Name(),
-				Path:        skillPath,
-				Description: desc,
-			})
 		}
+		skills = append(skills, model.Skill{
+			Name:        entry.Name(),
+			Path:        skillPath,
+			Description: desc,
+		})
 	}
 	return skills, nil
 }

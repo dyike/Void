@@ -11,24 +11,16 @@ import (
 	"strings"
 	"sync"
 	"time"
-)
 
-// ClipboardItem represents a clipboard history entry.
-type ClipboardItem struct {
-	ID        string                 `json:"id"`
-	Type      string                 `json:"type"`
-	Content   string                 `json:"content"`
-	Preview   string                 `json:"preview,omitempty"`
-	Timestamp int64                  `json:"timestamp"`
-	Metadata  map[string]interface{} `json:"metadata,omitempty"`
-}
+	"github.com/dyike/Void/internal/model"
+)
 
 const maxClipboardHistory = 100
 
 // ClipboardService watches the clipboard and maintains history.
 type ClipboardService struct {
 	mu          sync.RWMutex
-	history     []ClipboardItem
+	history     []model.ClipboardItem
 	lastContent string
 	dataDir     string
 	stopCh      chan struct{}
@@ -36,9 +28,7 @@ type ClipboardService struct {
 
 // NewClipboardService creates a new clipboard service.
 func NewClipboardService(dataDir string) *ClipboardService {
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		// best effort
-	}
+	_ = os.MkdirAll(dataDir, 0755)
 	s := &ClipboardService{
 		dataDir: dataDir,
 		stopCh:  make(chan struct{}),
@@ -58,10 +48,10 @@ func (s *ClipboardService) Stop() {
 }
 
 // GetHistory returns all clipboard history items (newest first).
-func (s *ClipboardService) GetHistory() []ClipboardItem {
+func (s *ClipboardService) GetHistory() []model.ClipboardItem {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
-	result := make([]ClipboardItem, len(s.history))
+	result := make([]model.ClipboardItem, len(s.history))
 	copy(result, s.history)
 	return result
 }
@@ -149,7 +139,7 @@ func (s *ClipboardService) addItem(content, ctype string) {
 		preview = preview[:197] + "..."
 	}
 
-	item := ClipboardItem{
+	item := model.ClipboardItem{
 		ID:        clipboardNewID(),
 		Type:      ctype,
 		Content:   content,
@@ -157,14 +147,14 @@ func (s *ClipboardService) addItem(content, ctype string) {
 		Timestamp: time.Now().UnixMilli(),
 	}
 
-	s.history = append([]ClipboardItem{item}, s.history...)
+	s.history = append([]model.ClipboardItem{item}, s.history...)
 	if len(s.history) > maxClipboardHistory {
 		s.history = s.history[:maxClipboardHistory]
 	}
 	s.saveToDisk()
 }
 
-func (s *ClipboardService) findByID(id string) *ClipboardItem {
+func (s *ClipboardService) findByID(id string) *model.ClipboardItem {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	for _, item := range s.history {
@@ -176,7 +166,7 @@ func (s *ClipboardService) findByID(id string) *ClipboardItem {
 	return nil
 }
 
-func (s *ClipboardService) writeToClipboard(item *ClipboardItem) error {
+func (s *ClipboardService) writeToClipboard(item *model.ClipboardItem) error {
 	cmd := exec.Command("pbcopy")
 	cmd.Stdin = strings.NewReader(item.Content)
 	return cmd.Run()
@@ -191,7 +181,7 @@ func (s *ClipboardService) loadFromDisk() {
 	if err != nil {
 		return
 	}
-	var items []ClipboardItem
+	var items []model.ClipboardItem
 	if err := json.Unmarshal(data, &items); err != nil {
 		return
 	}
