@@ -38,6 +38,13 @@ export function GetCommands(): $CancellablePromise<$models.CommandInfo[]> {
 }
 
 /**
+ * HideWindow hides the main application window.
+ */
+export function HideWindow(): $CancellablePromise<void> {
+    return $Call.ByID(2425926513);
+}
+
+/**
  * LaunchApp opens an application by its path.
  */
 export function LaunchApp(appPath: string): $CancellablePromise<void> {

@@ -12,6 +12,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/dyike/Void/internal/service/filesearch"
 	"github.com/dyike/Void/internal/service/frecency"
@@ -108,6 +109,13 @@ func (s *Service) LaunchApp(appPath string) error {
 // OpenURL opens a URL in the default browser.
 func (s *Service) OpenURL(url string) error {
 	return exec.Command("open", url).Run()
+}
+
+// HideWindow hides the main application window.
+func (s *Service) HideWindow() {
+	if app := application.Get(); app != nil {
+		app.Hide()
+	}
 }
 
 // OpenSystemSettings opens a macOS Settings pane by bundle identifier.
