@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../../model/models.js";
 
 /**
  * CopyToClipboard copies text to the macOS clipboard.
@@ -31,7 +31,7 @@ export function ExecuteSystemCommand(id: string): $CancellablePromise<void> {
 /**
  * GetCommands returns cached + frecency-boosted commands.
  */
-export function GetCommands(): $CancellablePromise<$models.CommandInfo[]> {
+export function GetCommands(): $CancellablePromise<model$0.CommandInfo[]> {
     return $Call.ByID(4050364337).then(($result: any) => {
         return $$createType1($result);
     });
@@ -82,7 +82,7 @@ export function RecordUsage(id: string): $CancellablePromise<void> {
 /**
  * RefreshCommands forces a re-discovery.
  */
-export function RefreshCommands(): $CancellablePromise<$models.CommandInfo[]> {
+export function RefreshCommands(): $CancellablePromise<model$0.CommandInfo[]> {
     return $Call.ByID(2802057942).then(($result: any) => {
         return $$createType1($result);
     });
@@ -98,7 +98,7 @@ export function RevealInFinder(path: string): $CancellablePromise<void> {
 /**
  * SearchFileContents searches inside file contents using grep (pure Go).
  */
-export function SearchFileContents(query: string): $CancellablePromise<$models.CommandInfo[]> {
+export function SearchFileContents(query: string): $CancellablePromise<model$0.CommandInfo[]> {
     return $Call.ByID(3024931605, query).then(($result: any) => {
         return $$createType1($result);
     });
@@ -107,12 +107,12 @@ export function SearchFileContents(query: string): $CancellablePromise<$models.C
 /**
  * SearchFiles searches for files by name using fuzzy matching (pure Go, no Spotlight).
  */
-export function SearchFiles(query: string): $CancellablePromise<$models.CommandInfo[]> {
+export function SearchFiles(query: string): $CancellablePromise<model$0.CommandInfo[]> {
     return $Call.ByID(370936336, query).then(($result: any) => {
         return $$createType1($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = $models.CommandInfo.createFrom;
+const $$createType0 = model$0.CommandInfo.createFrom;
 const $$createType1 = $Create.Array($$createType0);

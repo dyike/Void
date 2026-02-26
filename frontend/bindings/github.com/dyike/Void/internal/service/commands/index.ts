@@ -5,7 +5,3 @@ import * as Service from "./service.js";
 export {
     Service
 };
-
-export {
-    CommandInfo
-} from "./models.js";
