@@ -7,17 +7,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dyike/Void/internal/service/ai"
-	"github.com/dyike/Void/internal/service/calculator"
-	"github.com/dyike/Void/internal/service/clipboard"
-	"github.com/dyike/Void/internal/service/commands"
-	"github.com/dyike/Void/internal/service/hotkey"
-	"github.com/dyike/Void/internal/service/scripts"
-	"github.com/dyike/Void/internal/service/settings"
-	"github.com/dyike/Void/internal/service/snippets"
-	"github.com/dyike/Void/internal/window"
+	"github.com/dyike/Void/di"
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"github.com/wailsapp/wails/v3/pkg/services/dock"
 )
 
 //go:embed all:frontend/dist
@@ -35,48 +26,41 @@ func main() {
 	}
 
 	// Instantiate services
-	settingsSvc := settings.NewService(dataDir)
-	commandsSvc := commands.NewService(dataDir, settingsSvc)
-	clipboardSvc := clipboard.NewService(dataDir)
-	aiSvc := ai.NewService(settingsSvc)
-	snippetsSvc := snippets.NewService(dataDir)
-	calcSvc := calculator.NewService()
-	scriptsSvc := scripts.NewService(dataDir)
-	hotkeySvc := hotkey.NewService()
-	dockSvc := dock.New()
+	appContainer, err := di.InitApp(dataDir)
+	if err != nil {
+		log.Fatal("failed to initialize dependencies:", err)
+	}
+	svc := appContainer.Services
 
 	// Start background clipboard polling
-	clipboardSvc.Start()
-	defer clipboardSvc.Stop()
+	svc.ClipboardService.Start()
+	defer svc.ClipboardService.Stop()
 
 	// Pre-warm the command cache in the background
 	go func() {
-		if _, err := commandsSvc.RefreshCommands(); err != nil {
+		if _, err := svc.CommandsService.RefreshCommands(); err != nil {
 			log.Println("command refresh error:", err)
 		}
 	}()
 
-	// Create the window manager
-	winManager := window.NewManager()
-
 	// Expose Settings callbacks to the Settings service
-	settingsSvc.SetOpenSettingsFunc(winManager.OpenSettings)
-	settingsSvc.SetResizeSettingsFunc(winManager.ResizeSettings)
-	settingsSvc.SetShowSettingsFunc(winManager.ShowSettings)
-	settingsSvc.SetToggleSystemTrayFunc(winManager.ToggleSystemTray)
+	svc.SettingsService.SetOpenSettingsFunc(svc.WindowManager.OpenSettings)
+	svc.SettingsService.SetResizeSettingsFunc(svc.WindowManager.ResizeSettings)
+	svc.SettingsService.SetShowSettingsFunc(svc.WindowManager.ShowSettings)
+	svc.SettingsService.SetToggleSystemTrayFunc(svc.WindowManager.ToggleSystemTray)
 
 	app := application.New(application.Options{
 		Name:        "Void",
 		Description: "A powerful launcher for macOS",
 		Services: []application.Service{
-			application.NewService(settingsSvc),
-			application.NewService(commandsSvc),
-			application.NewService(clipboardSvc),
-			application.NewService(aiSvc),
-			application.NewService(snippetsSvc),
-			application.NewService(calcSvc),
-			application.NewService(scriptsSvc),
-			application.NewService(dockSvc),
+			application.NewService(svc.SettingsService),
+			application.NewService(svc.CommandsService),
+			application.NewService(svc.ClipboardService),
+			application.NewService(svc.AiService),
+			application.NewService(svc.SnippetsService),
+			application.NewService(svc.CalcService),
+			application.NewService(svc.ScriptsService),
+			application.NewService(svc.DockService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -90,28 +74,28 @@ func main() {
 	})
 
 	// Initialize the main window and system tray via Manager
-	winManager.SetSettingsService(settingsSvc)
-	winManager.SetDockService(dockSvc)
-	winManager.Init(app)
-	winManager.CreateMainWindow("/")
+	svc.WindowManager.SetSettingsService(svc.SettingsService)
+	svc.WindowManager.SetDockService(svc.DockService)
+	svc.WindowManager.Init(app)
+	svc.WindowManager.CreateMainWindow("/")
 
 	// ── Global Hotkey (Option+Space via CGEventTap) ───────────────────────
 	// Start in a goroutine after a short delay to ensure the app run loop is ready.
 	go func() {
 		time.Sleep(500 * time.Millisecond)
 		// Load hotkey from settings, defaulting to "option+space"
-		keySpec := settingsSvc.GetGlobalHotkey()
-		started := hotkeySvc.Start(winManager.ToggleLauncher, keySpec)
+		keySpec := svc.SettingsService.GetGlobalHotkey()
+		started := svc.HotkeyService.Start(svc.WindowManager.ToggleLauncher, keySpec)
 		if started {
 			log.Printf("hotkey: active (%s)", keySpec)
 			// Start snippet auto-expand after event tap is active
-			hotkeySvc.StartSnippetExpand(snippetsSvc.ExpandSnippet, snippetsSvc.GetAllPrefixes)
+			svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
 		} else {
 			log.Println("hotkey: CGEventTap not available — use system tray, or grant Accessibility in System Settings → Privacy & Security")
 		}
 	}()
 
-	defer hotkeySvc.Stop()
+	defer svc.HotkeyService.Stop()
 
 	// Run
 	if err := app.Run(); err != nil {

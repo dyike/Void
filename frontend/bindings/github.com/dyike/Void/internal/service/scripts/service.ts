@@ -12,7 +12,7 @@ import { Call as $Call, CancellablePromise as $CancellablePromise, Create as $Cr
 
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore: Unused imports
-import * as $models from "./models.js";
+import * as model$0 from "../../model/models.js";
 
 /**
  * CreateScript creates a new script file from a template.
@@ -24,7 +24,7 @@ export function CreateScript(name: string, mode: string): $CancellablePromise<st
 /**
  * Execute runs a script command and returns the output.
  */
-export function Execute(id: string, args: { [_ in string]?: string }): $CancellablePromise<$models.ExecutionResult | null> {
+export function Execute(id: string, args: { [_ in string]?: string }): $CancellablePromise<model$0.ExecutionResult | null> {
     return $Call.ByID(3560643614, id, args).then(($result: any) => {
         return $$createType1($result);
     });
@@ -33,7 +33,7 @@ export function Execute(id: string, args: { [_ in string]?: string }): $Cancella
 /**
  * GetScriptCommands returns all discovered script commands.
  */
-export function GetScriptCommands(): $CancellablePromise<$models.ScriptCommand[]> {
+export function GetScriptCommands(): $CancellablePromise<model$0.ScriptCommand[]> {
     return $Call.ByID(124259304).then(($result: any) => {
         return $$createType3($result);
     });
@@ -56,14 +56,14 @@ export function OpenScriptsDir(): $CancellablePromise<void> {
 /**
  * RefreshScriptCommands rescans the scripts directory.
  */
-export function RefreshScriptCommands(): $CancellablePromise<$models.ScriptCommand[]> {
+export function RefreshScriptCommands(): $CancellablePromise<model$0.ScriptCommand[]> {
     return $Call.ByID(2484116571).then(($result: any) => {
         return $$createType3($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = $models.ExecutionResult.createFrom;
+const $$createType0 = model$0.ExecutionResult.createFrom;
 const $$createType1 = $Create.Nullable($$createType0);
-const $$createType2 = $models.ScriptCommand.createFrom;
+const $$createType2 = model$0.ScriptCommand.createFrom;
 const $$createType3 = $Create.Array($$createType2);

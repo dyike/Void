@@ -5,10 +5,3 @@ import * as Service from "./service.js";
 export {
     Service
 };
-
-export {
-    Argument,
-    ExecutionResult,
-    ScriptCommand,
-    ScriptMode
-} from "./models.js";
