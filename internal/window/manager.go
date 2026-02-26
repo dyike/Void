@@ -1,7 +1,7 @@
 package window
 
 import (
-	"github.com/dyike/Void/internal/service/settings"
+	"github.com/dyike/Void/internal/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
 	"github.com/wailsapp/wails/v3/pkg/services/dock"
@@ -13,7 +13,7 @@ type Manager struct {
 	mainWindow     *application.WebviewWindow
 	settingsWindow *application.WebviewWindow
 	tray           *application.SystemTray
-	settingsSvc    *settings.Service
+	settingsSvc    *service.SettingsService
 	dockSvc        *dock.DockService
 }
 
@@ -23,7 +23,7 @@ func NewManager() *Manager {
 }
 
 // SetSettingsService wires the settings service for theme-aware window creation.
-func (m *Manager) SetSettingsService(svc *settings.Service) {
+func (m *Manager) SetSettingsService(svc *service.SettingsService) {
 	m.settingsSvc = svc
 }
 

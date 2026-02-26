@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/dyike/Void/di"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -26,7 +25,7 @@ func main() {
 	}
 
 	// Instantiate services
-	appContainer, err := di.InitApp(dataDir)
+	appContainer, err := InitApp(dataDir)
 	if err != nil {
 		log.Fatal("failed to initialize dependencies:", err)
 	}
@@ -66,9 +65,7 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 		Mac: application.MacOptions{
-			// Keep the app alive in the menu bar even when the window is closed
 			ApplicationShouldTerminateAfterLastWindowClosed: false,
-			// Hide Dock icon (run as an accessory app like Raycast)
 			ActivationPolicy: application.ActivationPolicyAccessory,
 		},
 	})
@@ -80,15 +77,12 @@ func main() {
 	svc.WindowManager.CreateMainWindow("/")
 
 	// ── Global Hotkey (Option+Space via CGEventTap) ───────────────────────
-	// Start in a goroutine after a short delay to ensure the app run loop is ready.
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		// Load hotkey from settings, defaulting to "option+space"
 		keySpec := svc.SettingsService.GetGlobalHotkey()
 		started := svc.HotkeyService.Start(svc.WindowManager.ToggleLauncher, keySpec)
 		if started {
 			log.Printf("hotkey: active (%s)", keySpec)
-			// Start snippet auto-expand after event tap is active
 			svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
 		} else {
 			log.Println("hotkey: CGEventTap not available — use system tray, or grant Accessibility in System Settings → Privacy & Security")

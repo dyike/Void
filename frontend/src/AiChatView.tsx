@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Loader2, ChevronDown, ChevronRight, Terminal, CheckCircle2, XCircle } from 'lucide-react'
-import * as AIService from '../bindings/github.com/dyike/Void/internal/service/ai/service.js'
+import * as AIService from '../bindings/github.com/dyike/Void/internal/service/aiservice.js'
 import { Events } from '@wailsio/runtime'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'

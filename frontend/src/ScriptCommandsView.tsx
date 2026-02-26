@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { Play, RefreshCw, FolderOpen, Search, X, Loader2, CheckCircle, AlertCircle } from 'lucide-react'
-import * as ScriptsService from '../bindings/github.com/dyike/Void/internal/service/scripts/service.js'
+import * as ScriptsService from '../bindings/github.com/dyike/Void/internal/service/scriptsservice.js'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"

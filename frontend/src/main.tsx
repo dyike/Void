@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import './index.css'
 import App from './App'
 import SettingsView from './SettingsView'
-import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
+import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settingsservice.js'
 import { Events } from '@wailsio/runtime'
 
 export function applyTheme(mode: string) {

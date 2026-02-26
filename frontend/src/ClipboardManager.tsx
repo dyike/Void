@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { FileText, Link, Image as ImageIcon, Trash2, Copy, Clipboard } from 'lucide-react'
-import * as ClipboardService from '../bindings/github.com/dyike/Void/internal/service/clipboard/service.js'
+import * as ClipboardService from '../bindings/github.com/dyike/Void/internal/service/clipboardservice.js'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
