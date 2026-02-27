@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Loader2, ChevronDown, ChevronRight, Terminal, CheckCircle2, XCircle } from 'lucide-react'
+import { Send, Loader2, ChevronDown, ChevronRight, Terminal, CheckCircle2, XCircle, Brain } from 'lucide-react'
 import * as AIService from '../bindings/github.com/dyike/Void/internal/service/aiservice.js'
 import { Events } from '@wailsio/runtime'
 import ReactMarkdown from 'react-markdown'
@@ -23,9 +23,11 @@ interface ToolCall {
 }
 
 interface Part {
-    type: 'text' | 'tool'
+    type: 'text' | 'tool' | 'thinking'
     text?: string
     tool?: ToolCall
+    thinkingText?: string
+    thinkingDone?: boolean
 }
 
 interface RenderBlock {
@@ -44,6 +46,43 @@ interface AIEvent {
     turn?: number
     seq: number
     timestamp: number
+}
+
+const ThinkingBlock: React.FC<{ text: string; done: boolean }> = ({ text, done }) => {
+    const [expanded, setExpanded] = useState(!done)
+
+    useEffect(() => {
+        if (done) setExpanded(false)
+    }, [done])
+
+    return (
+        <div className="mb-2 rounded-lg border border-indigo-200/40 bg-indigo-50/20 dark:border-indigo-500/20 dark:bg-indigo-950/20 text-[12px]">
+            <div
+                className={cn(
+                    "flex cursor-pointer select-none items-center gap-1.5 px-2.5 py-1.5 transition hover:bg-indigo-100/20 dark:hover:bg-indigo-900/20",
+                    done ? "rounded-lg" : "rounded-t-lg"
+                )}
+                onClick={() => done && setExpanded(v => !v)}
+            >
+                {done ? (
+                    expanded
+                        ? <ChevronDown size={11} className="text-indigo-400/70" />
+                        : <ChevronRight size={11} className="text-indigo-400/70" />
+                ) : (
+                    <Loader2 size={11} className="animate-spin text-indigo-400/70" />
+                )}
+                <Brain size={11} className="text-indigo-400/70" />
+                <span className="font-medium text-indigo-500/80 dark:text-indigo-400/80">
+                    {done ? '思考过程' : '思考中...'}
+                </span>
+            </div>
+            {expanded && text && (
+                <div className="border-t border-indigo-200/30 dark:border-indigo-500/20 px-2.5 py-2 text-[11.5px] leading-relaxed text-muted-foreground/70 italic whitespace-pre-wrap">
+                    {text.trim()}
+                </div>
+            )}
+        </div>
+    )
 }
 
 const ToolCallCard: React.FC<{ tool: ToolCall }> = ({ tool }) => {
@@ -125,6 +164,31 @@ function formatResult(s: string): string {
     }
 }
 
+// Split delta content into visible and thinking portions.
+// Handles <think>...</think> tags split across multiple deltas.
+function splitContent(content: string, inThinking: boolean): { visible: string; thinking: string; inThinking: boolean } {
+    let visible = ''
+    let thinking = ''
+    let remaining = content
+    let isThinking = inThinking
+    while (remaining.length > 0) {
+        if (isThinking) {
+            const closeIdx = remaining.indexOf('</think>')
+            if (closeIdx === -1) { thinking += remaining; break }
+            thinking += remaining.slice(0, closeIdx)
+            remaining = remaining.slice(closeIdx + 8)
+            isThinking = false
+        } else {
+            const openIdx = remaining.indexOf('<think>')
+            if (openIdx === -1) { visible += remaining; break }
+            visible += remaining.slice(0, openIdx)
+            remaining = remaining.slice(openIdx + 7)
+            isThinking = true
+        }
+    }
+    return { visible, thinking, inThinking: isThinking }
+}
+
 const AiChatView: React.FC = () => {
     const [messages, setMessages] = useState<Message[]>([])
     const [blocks, setBlocks] = useState<RenderBlock[]>([])
@@ -137,12 +201,32 @@ const AiChatView: React.FC = () => {
     const pendingEventsRef = useRef<AIEvent[]>([])
     const rafRef = useRef<number | null>(null)
     const eventSeqRef = useRef(0)
+    const inThinkingRef = useRef(false)
 
     const processEvents = () => {
         rafRef.current = null
 
-        const events = pendingEventsRef.current.sort((a, b) => a.seq - b.seq)
+        const rawEvents = pendingEventsRef.current.sort((a, b) => a.seq - b.seq)
         pendingEventsRef.current = []
+
+        // Split thinking/visible content OUTSIDE setBlocks to avoid React StrictMode double-invoke side effects
+        let isThinking = inThinkingRef.current
+        type EnrichedEvent = AIEvent & { visibleContent: string; thinkingContent: string; thinkingClosed: boolean }
+        const events: EnrichedEvent[] = rawEvents.map(event => {
+            if (event.type !== 'delta' || !event.content) {
+                return { ...event, visibleContent: '', thinkingContent: '', thinkingClosed: false }
+            }
+            const wasThinking = isThinking
+            const split = splitContent(event.content, isThinking)
+            isThinking = split.inThinking
+            return {
+                ...event,
+                visibleContent: split.visible,
+                thinkingContent: split.thinking,
+                thinkingClosed: wasThinking && !split.inThinking,
+            }
+        })
+        inThinkingRef.current = isThinking
 
         setBlocks(prev => {
             let blocks = [...prev]
@@ -164,20 +248,40 @@ const AiChatView: React.FC = () => {
 
             for (const event of events) {
                 switch (event.type) {
-                    case 'delta':
-                        if (!event.content) continue
+                    case 'delta': {
+                        const { visibleContent, thinkingContent, thinkingClosed } = event
+                        if (!visibleContent && !thinkingContent && !thinkingClosed) continue
                         hasStreamedRef.current = true
                         const idx = getOrCreateAssistant()
-                        const block = blocks[idx]
-                        const lastPart = block.parts[block.parts.length - 1]
-                        if (lastPart?.type === 'text') {
-                            const updatedPart = { ...lastPart, text: (lastPart.text || '') + event.content }
-                            const updatedParts = [...block.parts.slice(0, -1), updatedPart]
-                            blocks[idx] = { ...block, parts: updatedParts }
-                        } else {
-                            blocks[idx] = { ...block, parts: [...block.parts, { type: 'text', text: event.content }] }
+                        let parts = [...blocks[idx].parts]
+
+                        // Append thinking content
+                        if (thinkingContent || thinkingClosed) {
+                            const lastThink = parts[parts.length - 1]
+                            if (lastThink?.type === 'thinking' && !lastThink.thinkingDone) {
+                                parts = [...parts.slice(0, -1), {
+                                    ...lastThink,
+                                    thinkingText: (lastThink.thinkingText || '') + thinkingContent,
+                                    thinkingDone: thinkingClosed,
+                                }]
+                            } else {
+                                parts = [...parts, { type: 'thinking' as const, thinkingText: thinkingContent, thinkingDone: thinkingClosed }]
+                            }
                         }
+
+                        // Append visible content
+                        if (visibleContent) {
+                            const last = parts[parts.length - 1]
+                            if (last?.type === 'text') {
+                                parts = [...parts.slice(0, -1), { ...last, text: (last.text || '') + visibleContent }]
+                            } else {
+                                parts = [...parts, { type: 'text' as const, text: visibleContent }]
+                            }
+                        }
+
+                        blocks[idx] = { ...blocks[idx], parts }
                         break
+                    }
                     case 'tool_start':
                         const toolIdx = getOrCreateAssistant()
                         const toolBlock = blocks[toolIdx]
@@ -243,6 +347,7 @@ const AiChatView: React.FC = () => {
         const userMsg: Message = { role: 'user', content: text }
         setMessages(prev => [...prev, userMsg])
         hasStreamedRef.current = false
+        inThinkingRef.current = false
         activeAssistantIdRef.current = null
         setBlocks(prev => [...prev, { id: `user-${Date.now()}`, role: 'user', parts: [{ type: 'text', text }] }])
         setInput('')
@@ -330,6 +435,9 @@ const AiChatView: React.FC = () => {
                                                                 </div>
                                                             )}
                                                             <div className={cn("flex-1 min-w-0", !isLast && "pb-2")}>
+                                                                {part.type === 'thinking' && (
+                                                                    <ThinkingBlock text={part.thinkingText || ''} done={!!part.thinkingDone} />
+                                                                )}
                                                                 {part.type === 'tool' && part.tool && (
                                                                     <ToolCallCard tool={part.tool} />
                                                                 )}
