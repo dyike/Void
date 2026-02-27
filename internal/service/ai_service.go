@@ -140,7 +140,7 @@ func (s *AIService) Ask(prompt string) (*model.AskResult, error) {
 				"- If a command or tool fails, try ONE alternative approach, then explain what happened\n" +
 				"- NEVER retry the same failed command — explain the error to the user instead\n" +
 				"- Keep responses concise and in Markdown format\n" +
-				"- Always respond in the user's language (Chinese if asked in Chinese)\n" +
+				"- Always respond in the user's language; use Simplified Chinese (简体中文) when the user writes in Chinese\n" +
 				"- If you cannot complete a task, say so clearly with the reason\n\n" +
 				"# Environment\n" +
 				"- Operating system: macOS\n" +

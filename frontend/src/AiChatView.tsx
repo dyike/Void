@@ -413,7 +413,7 @@ const AiChatView: React.FC = () => {
                         >
                             <div
                                 className={cn(
-                                    "max-w-[80%] rounded-[14px] px-3.5 py-2 text-[13px] leading-relaxed",
+                                    "max-w-[80%] min-w-0 overflow-hidden rounded-[14px] px-3.5 py-2 text-[13px] leading-relaxed",
                                     block.role === 'user'
                                         ? "rounded-br-[4px] bg-indigo-500/30 text-indigo-800 dark:text-indigo-100"
                                         : "rounded-tl-[4px] border border-border bg-secondary/30 text-foreground"
@@ -442,8 +442,17 @@ const AiChatView: React.FC = () => {
                                                                     <ToolCallCard tool={part.tool} />
                                                                 )}
                                                                 {part.type === 'text' && (
-                                                                    <div className="space-y-2 text-[13px] leading-relaxed [&_p]:m-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-400/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_td]:border [&_th]:border-border [&_td]:border-border [&_th]:bg-secondary/50 [&_th]:px-2 [&_td]:px-2 [&_th]:py-1 [&_td]:py-1 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-200 [&_a]:underline [&_a]:underline-offset-2">
-                                                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{part.text || ''}</ReactMarkdown>
+                                                                    <div className="space-y-2 text-[13px] leading-relaxed [&_p]:m-0 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:mt-1 [&_code]:rounded [&_code]:bg-muted [&_code]:px-1 [&_code]:py-0.5 [&_code]:text-[12px] [&_pre]:rounded-lg [&_pre]:bg-muted [&_pre]:p-3 [&_pre_code]:bg-transparent [&_pre_code]:p-0 [&_blockquote]:border-l-2 [&_blockquote]:border-indigo-400/40 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_th]:border [&_td]:border [&_th]:border-border [&_td]:border-border [&_th]:bg-secondary/50 [&_th]:px-2 [&_td]:px-2 [&_th]:py-1 [&_td]:py-1 [&_a]:text-indigo-600 dark:[&_a]:text-indigo-200 [&_a]:underline [&_a]:underline-offset-2">
+                                                                        <ReactMarkdown
+                                                                            remarkPlugins={[remarkGfm]}
+                                                                            components={{
+                                                                                table: ({ children }) => (
+                                                                                    <div className="overflow-x-auto">
+                                                                                        <table className="min-w-full border-collapse">{children}</table>
+                                                                                    </div>
+                                                                                ),
+                                                                            }}
+                                                                        >{part.text || ''}</ReactMarkdown>
                                                                     </div>
                                                                 )}
                                                             </div>
