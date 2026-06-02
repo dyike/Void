@@ -3,6 +3,7 @@ import { Search, X, ArrowLeft, Loader2 } from 'lucide-react'
 import * as CommandsService from '../bindings/github.com/dyike/Void/internal/service/commands/service.js'
 import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculator/service.js'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
+import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippets/service.js'
 import ClipboardManager from './ClipboardManager'
 import AiChatView from './AiChatView'
 import SnippetsView from './SnippetsView'
@@ -32,12 +33,20 @@ interface CalcResult {
   isValid: boolean
 }
 
+interface Snippet {
+  id: string
+  name: string
+  content: string
+  prefix?: string
+}
+
 type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets' | 'scripts'
 
-const CATEGORY_ORDER = ['system', 'app', 'file', 'settings']
+const CATEGORY_ORDER = ['system', 'app', 'snippet', 'file', 'settings']
 const CATEGORY_LABELS: Record<string, string> = {
   system: 'Void',
   app: 'Applications',
+  snippet: 'Snippets',
   settings: 'System Settings',
   file: 'Files',
 }
@@ -56,6 +65,7 @@ function useDebounce<T>(value: T, ms: number): T {
 const App: React.FC = () => {
   const [query, setQuery] = useState('')
   const [commands, setCommands] = useState<CommandInfo[]>([])
+  const [snippetResults, setSnippetResults] = useState<CommandInfo[]>([])
   const [fileResults, setFileResults] = useState<CommandInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [fileSearching, setFileSearching] = useState(false)
@@ -77,6 +87,26 @@ const App: React.FC = () => {
   }, [])
 
   useEffect(() => { fetchCommands() }, [fetchCommands])
+
+  // ── Snippet search ────────────────────────────────────────────────────
+  useEffect(() => {
+    const q = debouncedQuery.trim()
+    if (!q) {
+      setSnippetResults([]); return
+    }
+    SnippetsService.GetSnippets(q)
+      .then(r => {
+        const results = ((r || []) as Snippet[]).slice(0, 8).map(sn => ({
+          id: sn.id,
+          title: sn.name,
+          subtitle: sn.prefix ? `${sn.prefix} • ${sn.content}` : sn.content,
+          icon: 'FileText',
+          category: 'snippet' as const,
+        }))
+        setSnippetResults(results)
+      })
+      .catch(() => setSnippetResults([]))
+  }, [debouncedQuery])
 
   // ── File search ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -111,8 +141,8 @@ const App: React.FC = () => {
     const goodFiles = fileResults
       .filter(f => (f.score ?? 0) > 0)
       .slice(0, 10)
-    return goodFiles.length > 0 ? [...base, ...goodFiles] : base
-  }, [commands, fileResults, query])
+    return [...base, ...snippetResults, ...goodFiles]
+  }, [commands, fileResults, query, snippetResults])
 
   const grouped = useMemo(() => {
     const map = new Map<string, CommandInfo[]>()
@@ -172,6 +202,9 @@ const App: React.FC = () => {
       case 'copy-name':
         await navigator.clipboard.writeText(cmd.title).catch(() => { })
         break
+      case 'copy-snippet':
+        await SnippetsService.CopyToClipboard(cmd.id).catch(() => { })
+        break
     }
   }, [flat, selectedIndex])
 
@@ -201,6 +234,8 @@ const App: React.FC = () => {
 
     if (cmd.category === 'app' && cmd.path) {
       await CommandsService.LaunchApp(cmd.path).catch(console.error)
+    } else if (cmd.category === 'snippet') {
+      await SnippetsService.CopyToClipboard(cmd.id).catch(console.error)
     } else if (cmd.category === 'settings' && cmd.path) {
       await CommandsService.OpenURL('file://' + cmd.path).catch(console.error)
     } else if (cmd.category === 'file' && cmd.path) {
@@ -424,7 +459,7 @@ const App: React.FC = () => {
                 className="bg-indigo-500/30 text-indigo-600 dark:text-indigo-100 hover:bg-indigo-500/45"
                 onClick={() => launchCmd(selectedCmd)}
               >
-                Open
+                {selectedCmd.category === 'snippet' ? 'Copy' : 'Open'}
                 <kbd className="ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded bg-indigo-500/30 px-1 text-[11px] text-indigo-600 dark:text-indigo-100">↵</kbd>
               </Button>
             </>

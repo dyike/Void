@@ -1,6 +1,7 @@
 package clipboard
 
 import (
+	"bytes"
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
@@ -11,6 +12,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unicode"
+	"unicode/utf8"
 )
 
 // ClipboardItem represents a clipboard history entry.
@@ -128,11 +131,14 @@ func (s *Service) checkClipboard() {
 }
 
 func (s *Service) readClipboard() (string, string) {
-	// Try text first via pbpaste
-	out, err := exec.Command("pbpaste").Output()
+	// Prefer plain text. Without this, pbpaste can emit non-text payloads for
+	// rich clipboard items, which then show up as unreadable history entries.
+	out, err := exec.Command("pbpaste", "-Prefer", "txt").Output()
+	if err != nil {
+		out, err = exec.Command("pbpaste").Output()
+	}
 	if err == nil {
-		text := strings.TrimRight(string(out), "\n")
-		if text != "" {
+		if text, ok := normalizeClipboardText(out); ok {
 			ctype := "text"
 			if isURL(text) {
 				ctype = "url"
@@ -148,10 +154,7 @@ func (s *Service) addItem(content, ctype string) {
 	defer s.mu.Unlock()
 
 	id := newID()
-	preview := content
-	if len(preview) > 200 {
-		preview = preview[:197] + "..."
-	}
+	preview := truncateRunes(content, 200)
 
 	item := ClipboardItem{
 		ID:        id,
@@ -202,9 +205,12 @@ func (s *Service) loadFromDisk() {
 	if err := json.Unmarshal(data, &items); err != nil {
 		return
 	}
-	s.history = items
+	s.history = sanitizeHistory(items)
 	if len(s.history) > 0 {
 		s.lastContent = s.history[0].Content
+	}
+	if len(s.history) != len(items) {
+		s.saveToDisk()
 	}
 }
 
@@ -226,4 +232,79 @@ func newID() string {
 
 func isURL(s string) bool {
 	return strings.HasPrefix(s, "http://") || strings.HasPrefix(s, "https://")
+}
+
+func normalizeClipboardText(out []byte) (string, bool) {
+	out = bytes.TrimRight(out, "\r\n")
+	if len(out) == 0 || !utf8.Valid(out) {
+		return "", false
+	}
+
+	text := string(out)
+	if strings.TrimSpace(text) == "" || !isReadableText(text) {
+		return "", false
+	}
+	return text, true
+}
+
+func isReadableText(text string) bool {
+	for _, r := range text {
+		if r == utf8.RuneError || r == '\uFFFD' {
+			return false
+		}
+		if r == '\n' || r == '\r' || r == '\t' {
+			continue
+		}
+		if unicode.IsControl(r) {
+			return false
+		}
+	}
+	return true
+}
+
+func sanitizeHistory(items []ClipboardItem) []ClipboardItem {
+	result := make([]ClipboardItem, 0, len(items))
+	for _, item := range items {
+		if item.Content == "" {
+			continue
+		}
+		switch item.Type {
+		case "text", "url", "":
+			if !utf8.ValidString(item.Content) || !isReadableText(item.Content) {
+				continue
+			}
+			preview := item.Preview
+			if preview == "" || !utf8.ValidString(preview) || !isReadableText(preview) {
+				preview = item.Content
+			}
+			item.Preview = truncateRunes(preview, 200)
+		}
+		result = append(result, item)
+	}
+	return result
+}
+
+func truncateRunes(s string, max int) string {
+	if max <= 0 {
+		return ""
+	}
+	if utf8.RuneCountInString(s) <= max {
+		return s
+	}
+
+	var b strings.Builder
+	limit := max - 3
+	if limit < 0 {
+		limit = 0
+	}
+	count := 0
+	for _, r := range s {
+		if count >= limit {
+			break
+		}
+		b.WriteRune(r)
+		count++
+	}
+	b.WriteString("...")
+	return b.String()
 }

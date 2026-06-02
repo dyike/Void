@@ -248,9 +248,11 @@ import "C"
 import (
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 	"unsafe"
 )
 
@@ -460,6 +462,9 @@ func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() 
 			if buf != lastBuf && len(buf) > 0 {
 				lastBuf = buf
 				prefixes := getPrefixes()
+				sort.Slice(prefixes, func(i, j int) bool {
+					return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
+				})
 				for _, prefix := range prefixes {
 					if strings.HasSuffix(buf, prefix) {
 						content := lookup(prefix)
@@ -490,7 +495,7 @@ func (s *Service) expandSnippet(prefix string, content string) {
 	}
 
 	// 2. Send backspaces to delete the prefix
-	C.sendBackspaces(C.int(len(prefix)))
+	C.sendBackspaces(C.int(utf8.RuneCountInString(prefix)))
 	time.Sleep(50 * time.Millisecond)
 
 	// 3. Set clipboard to snippet content

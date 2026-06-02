@@ -98,6 +98,9 @@ export function buildActions(cmd: { id: string; category: string; title: string;
       actions.push({ id: 'open', label: 'Open AI Chat', icon: <Sparkles size={14} />, shortcut: '↵' })
     }
     actions.push({ id: 'copy-name', label: 'Copy Name', icon: <Copy size={14} /> })
+  } else if (cmd.category === 'snippet') {
+    actions.push({ id: 'copy-snippet', label: 'Copy Snippet', icon: <Copy size={14} />, shortcut: '↵' })
+    actions.push({ id: 'copy-name', label: 'Copy Name', icon: <Copy size={14} /> })
   }
 
   return actions
