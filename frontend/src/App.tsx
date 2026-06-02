@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { Search, X, ArrowLeft, Loader2 } from 'lucide-react'
-import * as CommandsService from '../bindings/github.com/dyike/Void/internal/service/commands/service.js'
-import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculator/service.js'
-import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
-import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippets/service.js'
+import * as CommandsService from '../bindings/github.com/dyike/Void/internal/service/commandservice.js'
+import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculatorservice.js'
+import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settingsservice.js'
+import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippetservice.js'
 import ClipboardManager from './ClipboardManager'
 import AiChatView from './AiChatView'
 import SnippetsView from './SnippetsView'
@@ -22,7 +22,7 @@ interface CommandInfo {
   subtitle?: string
   iconDataUrl?: string
   icon?: string
-  category: 'app' | 'settings' | 'system' | 'file' | 'snippet'
+  category: 'app' | 'settings' | 'system' | 'file' | 'snippet' | 'web-search'
   path?: string
   score?: number
 }
@@ -42,9 +42,10 @@ interface Snippet {
 
 type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets' | 'scripts'
 
-const CATEGORY_ORDER = ['system', 'app', 'snippet', 'file', 'settings']
+const CATEGORY_ORDER = ['system', 'web-search', 'app', 'snippet', 'file', 'settings']
 const CATEGORY_LABELS: Record<string, string> = {
   system: 'Void',
+  'web-search': 'Web Search',
   app: 'Applications',
   snippet: 'Snippets',
   settings: 'System Settings',
@@ -66,6 +67,14 @@ function normalizeFullWidthASCII(value: string): string {
   ).replace(/\u3000/g, ' ')
 }
 
+const SEARCH_ENGINES = [
+  { id: 'google', title: 'Google', icon: 'Search', url: 'https://www.google.com/search?q=%s', home: 'https://www.google.com' },
+  { id: 'baidu', title: 'Baidu', icon: 'Search', url: 'https://www.baidu.com/s?wd=%s', home: 'https://www.baidu.com' },
+  { id: 'bing', title: 'Bing', icon: 'Search', url: 'https://www.bing.com/search?q=%s', home: 'https://www.bing.com' },
+  { id: 'github', title: 'GitHub', icon: 'Github', url: 'https://github.com/search?q=%s', home: 'https://github.com' },
+  { id: 'youtube', title: 'YouTube', icon: 'Youtube', url: 'https://www.youtube.com/results?search_query=%s', home: 'https://www.youtube.com' }
+]
+
 // ─── App ──────────────────────────────────────────────────────────────────
 
 const App: React.FC = () => {
@@ -74,11 +83,11 @@ const App: React.FC = () => {
   const [snippetResults, setSnippetResults] = useState<CommandInfo[]>([])
   const [fileResults, setFileResults] = useState<CommandInfo[]>([])
   const [loading, setLoading] = useState(true)
-  const [fileSearching, setFileSearching] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [view, setView] = useState<View>('launcher')
   const [showActions, setShowActions] = useState(false)
   const [calcResult, setCalcResult] = useState<CalcResult | null>(null)
+  const [activeSearchEngine, setActiveSearchEngine] = useState<typeof SEARCH_ENGINES[0] | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
   const debouncedQuery = useDebounce(query, 200)
@@ -119,14 +128,11 @@ const App: React.FC = () => {
     const q = normalizeFullWidthASCII(debouncedQuery).trim()
     if (!q || q.length < 2 || q.startsWith(';')) {
       setFileResults([])
-      setFileSearching(false)
       return
     }
-    setFileSearching(true)
     CommandsService.SearchFiles(q)
       .then(r => setFileResults((r || []) as CommandInfo[]))
       .catch(() => setFileResults([]))
-      .finally(() => setFileSearching(false))
   }, [debouncedQuery])
 
   // ── Calculator ────────────────────────────────────────────────────────
@@ -143,6 +149,20 @@ const App: React.FC = () => {
   // ── Filter + group ────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
+
+    // Web Search Engine Selector Mode
+    if (q.startsWith('@') && !activeSearchEngine) {
+      const searchTerm = q.slice(1).trim()
+      return SEARCH_ENGINES.filter(e => !searchTerm || e.title.toLowerCase().includes(searchTerm)).map(engine => ({
+        id: `web-search-${engine.id}`,
+        title: engine.title,
+        subtitle: `Search with ${engine.title}`,
+        icon: engine.icon,
+        category: 'web-search' as const,
+        path: engine.id
+      }))
+    }
+
     const base = q
       ? commands.filter(c => c.title.toLowerCase().includes(q))
       : commands
@@ -150,8 +170,20 @@ const App: React.FC = () => {
     const goodFiles = fileResults
       .filter(f => (f.score ?? 0) > 0)
       .slice(0, 10)
+    // If we have an active search engine, we don't return normal app/file commands
+    if (activeSearchEngine) {
+      return [{
+        id: `search-execute-${activeSearchEngine.id}`,
+        title: q ? `Search for '${q}'` : `Open ${activeSearchEngine.title}`,
+        subtitle: activeSearchEngine.title,
+        icon: activeSearchEngine.icon,
+        category: 'web-search' as const,
+        path: q ? activeSearchEngine.url.replace('%s', encodeURIComponent(q)) : activeSearchEngine.home
+      }]
+    }
+
     return [...base, ...snippetResults, ...goodFiles]
-  }, [commands, fileResults, query, snippetResults])
+  }, [commands, fileResults, query, activeSearchEngine, snippetResults])
 
   const grouped = useMemo(() => {
     const map = new Map<string, CommandInfo[]>()
@@ -249,6 +281,19 @@ const App: React.FC = () => {
       await CommandsService.OpenURL('file://' + cmd.path).catch(console.error)
     } else if (cmd.category === 'file' && cmd.path) {
       await CommandsService.OpenURL('file://' + cmd.path).catch(console.error)
+    } else if (cmd.category === 'web-search' && cmd.path) {
+      if (cmd.id.startsWith('web-search-')) {
+        // Selected a search engine from the '@' prompt
+        const engine = SEARCH_ENGINES.find(e => e.id === cmd.path)
+        if (engine) {
+          setActiveSearchEngine(engine)
+          setQuery('')
+        }
+      } else {
+        // Executing the actual search
+        await CommandsService.OpenURL(cmd.path).catch(console.error)
+        CommandsService.HideWindow().catch(console.error)
+      }
     }
   }, [])
 
@@ -263,6 +308,13 @@ const App: React.FC = () => {
     if (showActions) return // handled by ActionPanel
 
     switch (e.key) {
+      case 'Backspace':
+        if (query === '' && activeSearchEngine) {
+          e.preventDefault()
+          setActiveSearchEngine(null)
+          setQuery('@')
+        }
+        break
       case 'ArrowDown':
         e.preventDefault()
         setSelectedIndex(i => Math.min(i + 1, flat.length - 1))
@@ -292,7 +344,7 @@ const App: React.FC = () => {
         }
         break
     }
-  }, [view, showActions, flat, selectedIndex, launchCmd, calcResult, copyCalcResult, query])
+  }, [view, showActions, flat, selectedIndex, launchCmd, calcResult, copyCalcResult, query, activeSearchEngine])
 
   // ─── Icon renderer ─────────────────────────────────────────────────────
   const renderIcon = (cmd: CommandInfo) => {
@@ -335,7 +387,8 @@ const App: React.FC = () => {
 
   return (
     <div
-      className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl"
+      className="flex h-screen flex-col overflow-hidden bg-background/80 font-sans text-foreground backdrop-blur-3xl"
+      style={{ WebkitAppRegion: 'drag' } as any}
       onKeyDown={handleKeyDown}
       onMouseDown={(e) => {
         // Prevent clicks on non-input elements from stealing focus
@@ -345,30 +398,38 @@ const App: React.FC = () => {
         }
       }}
     >
-      {/* Search bar */}
-      <div className="flex items-center gap-2 border-b border-launcher-border px-4 py-3">
-        <Search size={16} className="text-muted-foreground" />
+      {/* Search Bar */}
+      <div className="relative flex shrink-0 items-center border-b border-launcher-border px-4 py-3 pb-[14px]">
+        {activeSearchEngine ? (
+          <div className="absolute left-4 z-10 flex h-6 items-center gap-1.5 rounded bg-indigo-500/15 px-2 text-indigo-600 dark:text-indigo-200 border border-indigo-500/20 data-[state=active]:bg-indigo-500/30">
+            <DynamicIcon name={activeSearchEngine.icon} size={13} className="shrink-0" />
+            <span className="text-[12.5px] font-medium tracking-tight h-full leading-[25px]">{activeSearchEngine.title}</span>
+          </div>
+        ) : (
+          <Search className="absolute left-4 text-muted-foreground/60" size={20} />
+        )}
         <Input
           ref={inputRef}
-          className="h-8 border-0 bg-transparent px-0 text-[15px] font-medium text-foreground placeholder:text-muted-foreground/60 shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          placeholder="Search apps, files, snippets…"
+          className={cn(
+            "h-10 border-0 bg-transparent text-xl shadow-none focus-visible:ring-0 placeholder:text-muted-foreground/40",
+            activeSearchEngine ? "pl-[104px]" : "pl-9"
+          )}
+          placeholder={activeSearchEngine ? "Search..." : "Void"}
           value={query}
           onChange={e => setQuery(e.target.value)}
           autoFocus
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          autoComplete="off"
         />
-        {(loading || fileSearching) && (
-          <Loader2 size={14} className="shrink-0 animate-spin text-muted-foreground/60" />
-        )}
-        {query && (
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => setQuery('')}
-          >
+        {loading ? (
+          <Loader2 className="absolute right-4 animate-spin text-muted-foreground/40" size={18} />
+        ) : (query || activeSearchEngine) ? (
+          <button onClick={() => { setQuery(''); setActiveSearchEngine(null) }} className="absolute right-4 flex h-6 w-6 items-center justify-center rounded-full bg-secondary text-muted-foreground hover:bg-secondary/80 hover:text-foreground">
             <X size={14} />
-          </Button>
-        )}
+          </button>
+        ) : null}
       </div>
 
       {/* Calculator result bar */}

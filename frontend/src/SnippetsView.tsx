@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Plus, Edit2, Trash2, Copy, Search, X } from 'lucide-react'
-import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippets/service.js'
+import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippetservice.js'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"

@@ -3,7 +3,8 @@ module github.com/dyike/Void
 go 1.26.0
 
 require (
-	github.com/crosszan/modu v0.0.5
+	github.com/crosszan/modu v0.0.7
+	github.com/google/wire v0.7.0
 	github.com/sahilm/fuzzy v0.1.1
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.97
 )

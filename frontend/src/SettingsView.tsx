@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settings/service.js'
-import { AppSettings, Skill } from '../bindings/github.com/dyike/Void/internal/service/settings/models.js'
+import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settingsservice.js'
+import { AppSettings, Skill } from '../bindings/github.com/dyike/Void/internal/model/models.js'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
