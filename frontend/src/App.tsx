@@ -110,11 +110,14 @@ const App: React.FC = () => {
 
   // ── File search ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (!debouncedQuery.trim() || debouncedQuery.length < 2) {
-      setFileResults([]); return
+    const q = debouncedQuery.trim()
+    if (!q || q.length < 2 || q.startsWith(';')) {
+      setFileResults([])
+      setFileSearching(false)
+      return
     }
     setFileSearching(true)
-    CommandsService.SearchFiles(debouncedQuery)
+    CommandsService.SearchFiles(q)
       .then(r => setFileResults((r || []) as CommandInfo[]))
       .catch(() => setFileResults([]))
       .finally(() => setFileSearching(false))
