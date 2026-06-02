@@ -53,6 +53,16 @@ static char keycodeToChar(CGKeyCode kc) {
     }
 }
 
+static char eventToASCIIChar(CGEventRef event) {
+    UniChar chars[4];
+    UniCharCount actualLength = 0;
+    CGEventKeyboardGetUnicodeString(event, 4, &actualLength, chars);
+    if (actualLength == 1 && chars[0] >= 32 && chars[0] <= 126) {
+        return (char)chars[0];
+    }
+    return 0;
+}
+
 static void snippetBufAppend(char c) {
     if (g_snippet_len < SNIPPET_BUF_SIZE - 1) {
         g_snippet_buf[g_snippet_len++] = c;
@@ -150,9 +160,12 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
             } else if (keyCode == 48) {
                 snippetBufAppend('\t');
             } else {
-                char c = keycodeToChar(keyCode);
+                char c = eventToASCIIChar(event);
+                if (c == 0) {
+                    c = keycodeToChar(keyCode);
+                }
                 if (c != 0) {
-                    int shifted = (masked & kCGEventFlagMaskShift) != 0;
+                    int shifted = ((masked & kCGEventFlagMaskShift) != 0) && eventToASCIIChar(event) == 0;
                     if (shifted) {
                         switch (c) {
                             case ';': c = ':'; break;
@@ -440,6 +453,7 @@ func (s *Service) startTap(h func()) bool {
 			return false
 		}
 	}
+	log.Println("hotkey: Accessibility granted")
 	if !HasListenEventPermission() {
 		log.Println("hotkey: requesting Input Monitoring permission…")
 		if !RequestListenEventPermission() || !HasListenEventPermission() {
@@ -447,6 +461,7 @@ func (s *Service) startTap(h func()) bool {
 			return false
 		}
 	}
+	log.Println("hotkey: Input Monitoring granted")
 	ret := C.startEventTap()
 	if ret != 0 {
 		log.Println("hotkey: CGEventTapCreate failed — Accessibility may need to be re-granted")
@@ -479,6 +494,8 @@ type SnippetLookupFn func(prefix string) *string
 // StartSnippetExpand starts a goroutine that monitors typed characters
 // and expands snippet prefixes.
 func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() []string) {
+	prefixes := getPrefixes()
+	log.Printf("snippet: auto-expand active with %d prefix(es): %s", len(prefixes), strings.Join(prefixes, ", "))
 	go func() {
 		var lastBuf string
 		for running.Load() {
@@ -504,7 +521,6 @@ func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() 
 		}
 		log.Println("snippet: goroutine exited (running=false)")
 	}()
-	log.Println("snippet: auto-expand active")
 }
 
 type snippetTriggerMatch struct {
