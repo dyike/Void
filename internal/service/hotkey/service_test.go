@@ -33,3 +33,20 @@ func TestMatchSnippetTriggerPrefersProvidedOrder(t *testing.T) {
 		t.Fatalf("expected longer prefix to be matched by caller-sorted order, got %#v", match)
 	}
 }
+
+func TestNormalizeSnippetTriggerTextFullWidthASCII(t *testing.T) {
+	got := normalizeSnippetTriggerText("；ａｄｄｒ　")
+	if got != ";addr " {
+		t.Fatalf("expected full-width ASCII normalized, got %q", got)
+	}
+}
+
+func TestMatchSnippetTriggerFullWidthInput(t *testing.T) {
+	match, ok := matchSnippetTrigger("hello ；addr", []string{";addr"})
+	if !ok {
+		t.Fatal("expected full-width snippet trigger match")
+	}
+	if match.prefix != ";addr" || match.deleteText != ";addr" || match.keepText != "" {
+		t.Fatalf("unexpected match: %#v", match)
+	}
+}

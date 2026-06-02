@@ -60,6 +60,12 @@ function useDebounce<T>(value: T, ms: number): T {
   return d
 }
 
+function normalizeFullWidthASCII(value: string): string {
+  return value.replace(/[\uFF01-\uFF5E]/g, ch =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)
+  ).replace(/\u3000/g, ' ')
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────
 
 const App: React.FC = () => {
@@ -90,7 +96,7 @@ const App: React.FC = () => {
 
   // ── Snippet search ────────────────────────────────────────────────────
   useEffect(() => {
-    const q = debouncedQuery.trim()
+    const q = normalizeFullWidthASCII(debouncedQuery).trim()
     if (!q) {
       setSnippetResults([]); return
     }
@@ -110,7 +116,7 @@ const App: React.FC = () => {
 
   // ── File search ───────────────────────────────────────────────────────
   useEffect(() => {
-    const q = debouncedQuery.trim()
+    const q = normalizeFullWidthASCII(debouncedQuery).trim()
     if (!q || q.length < 2 || q.startsWith(';')) {
       setFileResults([])
       setFileSearching(false)

@@ -11,9 +11,14 @@ package hotkey
 #include <ApplicationServices/ApplicationServices.h>
 #include <AppKit/AppKit.h>
 #include <dispatch/dispatch.h>
+#include <fcntl.h>
 #include <pthread.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/file.h>
+#include <sys/time.h>
+#include <unistd.h>
 
 // ── Configurable hotkey ───────────────────────────────────────────────────
 
@@ -68,12 +73,27 @@ static char keycodeToChar(CGKeyCode kc) {
     }
 }
 
-static char eventToASCIIChar(CGEventRef event) {
+static char unicodeToSnippetChar(UniChar ch) {
+    if (ch >= 32 && ch <= 126) {
+        return (char)ch;
+    }
+    // Chinese input sources may emit full-width ASCII such as "；addr".
+    // Keep snippet triggers comparable with user-configured half-width prefixes.
+    if (ch >= 0xFF01 && ch <= 0xFF5E) {
+        return (char)(ch - 0xFEE0);
+    }
+    if (ch == 0x3000) {
+        return ' ';
+    }
+    return 0;
+}
+
+static char eventToSnippetChar(CGEventRef event) {
     UniChar chars[4];
     UniCharCount actualLength = 0;
     CGEventKeyboardGetUnicodeString(event, 4, &actualLength, chars);
-    if (actualLength == 1 && chars[0] >= 32 && chars[0] <= 126) {
-        return (char)chars[0];
+    if (actualLength == 1) {
+        return unicodeToSnippetChar(chars[0]);
     }
     return 0;
 }
@@ -148,7 +168,7 @@ static void performSnippetExpansion(int triggerLen, const char *replacement) {
         usleep(30000);
 
         pasteClipboard();
-        usleep(100000);
+        usleep(500000);
 
         if (oldClip != NULL) {
             setClipboardText(oldClip);
@@ -156,6 +176,44 @@ static void performSnippetExpansion(int triggerLen, const char *replacement) {
         }
         free(replacementCopy);
     });
+}
+
+static long long nowMillis(void) {
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return ((long long)tv.tv_sec * 1000LL) + ((long long)tv.tv_usec / 1000LL);
+}
+
+static int claimSnippetExpansion(const char *prefix) {
+    if (prefix == NULL) return 0;
+
+    int fd = open("/tmp/void-snippet-expand.lock", O_CREAT | O_RDWR, 0600);
+    if (fd < 0) return 1;
+    if (flock(fd, LOCK_EX | LOCK_NB) != 0) {
+        close(fd);
+        return 0;
+    }
+
+    char buf[256] = {0};
+    ssize_t n = read(fd, buf, sizeof(buf) - 1);
+    if (n < 0) n = 0;
+    buf[n] = '\0';
+
+    long long lastMs = 0;
+    char lastPrefix[128] = {0};
+    sscanf(buf, "%lld %127s", &lastMs, lastPrefix);
+
+    long long now = nowMillis();
+    int duplicate = (strcmp(lastPrefix, prefix) == 0 && lastMs > 0 && (now - lastMs) < 1500);
+    if (!duplicate) {
+        ftruncate(fd, 0);
+        lseek(fd, 0, SEEK_SET);
+        dprintf(fd, "%lld %s\n", now, prefix);
+    }
+
+    flock(fd, LOCK_UN);
+    close(fd);
+    return duplicate ? 0 : 1;
 }
 
 static void tryExpandSnippetRules(void) {
@@ -168,8 +226,12 @@ static void tryExpandSnippetRules(void) {
         if (snippetBufHasSuffix(prefix)) {
             char *replacement = strdup(content);
             int triggerLen = (int)strlen(prefix);
+            int claimed = claimSnippetExpansion(prefix);
+            fprintf(stderr, "snippet: matched prefix \"%s\" pid=%d%s\n", prefix, getpid(), claimed ? "" : " (duplicate suppressed)");
             pthread_mutex_unlock(&g_snippet_mutex);
-            performSnippetExpansion(triggerLen, replacement);
+            if (claimed) {
+                performSnippetExpansion(triggerLen, replacement);
+            }
             free(replacement);
             snippetBufClear();
             return;
@@ -193,8 +255,12 @@ static void tryExpandSnippetRules(void) {
                 replacement[contentLen] = delimiter;
                 replacement[contentLen + 1] = '\0';
                 int triggerLen = (int)(prefixLen + 1);
+                int claimed = claimSnippetExpansion(prefix);
+                fprintf(stderr, "snippet: matched prefix \"%s\" with delimiter pid=%d%s\n", prefix, getpid(), claimed ? "" : " (duplicate suppressed)");
                 pthread_mutex_unlock(&g_snippet_mutex);
-                performSnippetExpansion(triggerLen, replacement);
+                if (claimed) {
+                    performSnippetExpansion(triggerLen, replacement);
+                }
                 free(replacement);
                 snippetBufClear();
                 return;
@@ -278,12 +344,12 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
                 snippetBufAppend('\t');
                 tryExpandSnippetRules();
             } else {
-                char c = eventToASCIIChar(event);
+                char c = eventToSnippetChar(event);
                 if (c == 0) {
                     c = keycodeToChar(keyCode);
                 }
                 if (c != 0) {
-                    int shifted = ((masked & kCGEventFlagMaskShift) != 0) && eventToASCIIChar(event) == 0;
+                    int shifted = ((masked & kCGEventFlagMaskShift) != 0) && eventToSnippetChar(event) == 0;
                     if (shifted) {
                         switch (c) {
                             case ';': c = ':'; break;
@@ -632,8 +698,12 @@ func syncSnippetRules(lookup SnippetLookupFn, getPrefixes func() []string, lastS
 	active := make([]string, 0, len(prefixes))
 	contents := make(map[string]string, len(prefixes))
 	var signature strings.Builder
-	for _, prefix := range prefixes {
-		content := lookup(prefix)
+	for _, rawPrefix := range prefixes {
+		content := lookup(rawPrefix)
+		prefix := normalizeSnippetTriggerText(rawPrefix)
+		if content == nil && prefix != rawPrefix {
+			content = lookup(prefix)
+		}
 		if prefix == "" || content == nil {
 			continue
 		}
@@ -662,6 +732,21 @@ func syncSnippetRules(lookup SnippetLookupFn, getPrefixes func() []string, lastS
 	return nextSignature
 }
 
+func normalizeSnippetTriggerText(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 0xFF01 && r <= 0xFF5E:
+			b.WriteRune(r - 0xFEE0)
+		case r == 0x3000:
+			b.WriteByte(' ')
+		default:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
 type snippetTriggerMatch struct {
 	prefix     string
 	deleteText string
@@ -669,7 +754,9 @@ type snippetTriggerMatch struct {
 }
 
 func matchSnippetTrigger(buf string, prefixes []string) (snippetTriggerMatch, bool) {
+	buf = normalizeSnippetTriggerText(buf)
 	for _, prefix := range prefixes {
+		prefix = normalizeSnippetTriggerText(prefix)
 		if prefix == "" {
 			continue
 		}
