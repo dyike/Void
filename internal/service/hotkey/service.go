@@ -507,10 +507,13 @@ func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() 
 				sort.Slice(prefixes, func(i, j int) bool {
 					return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
 				})
+				if len(prefixes) > 0 && strings.Contains(buf, ";") {
+					log.Printf("snippet: buffer=%q", buf)
+				}
 				if match, ok := matchSnippetTrigger(buf, prefixes); ok {
 					content := lookup(match.prefix)
 					if content != nil {
-						log.Printf("snippet: MATCH! expanding prefix %q → %d chars", match.prefix, len(*content))
+						log.Printf("snippet: MATCH! prefix=%q trigger=%q replacement=%d chars", match.prefix, match.deleteText, utf8.RuneCountInString(*content))
 						s.expandSnippet(match.deleteText, *content+match.keepText)
 						C.clearSnippetBuffer()
 						lastBuf = ""
