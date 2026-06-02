@@ -168,7 +168,7 @@ static void performSnippetExpansion(int triggerLen, const char *replacement) {
         usleep(30000);
 
         pasteClipboard();
-        usleep(500000);
+        usleep(2000000);
 
         if (oldClip != NULL) {
             setClipboardText(oldClip);
@@ -227,7 +227,7 @@ static void tryExpandSnippetRules(void) {
             char *replacement = strdup(content);
             int triggerLen = (int)strlen(prefix);
             int claimed = claimSnippetExpansion(prefix);
-            fprintf(stderr, "snippet: matched prefix \"%s\" pid=%d%s\n", prefix, getpid(), claimed ? "" : " (duplicate suppressed)");
+            fprintf(stderr, "snippet: matched prefix \"%s\" replacementLen=%zu pid=%d%s\n", prefix, strlen(content), getpid(), claimed ? "" : " (duplicate suppressed)");
             pthread_mutex_unlock(&g_snippet_mutex);
             if (claimed) {
                 performSnippetExpansion(triggerLen, replacement);
@@ -256,7 +256,7 @@ static void tryExpandSnippetRules(void) {
                 replacement[contentLen + 1] = '\0';
                 int triggerLen = (int)(prefixLen + 1);
                 int claimed = claimSnippetExpansion(prefix);
-                fprintf(stderr, "snippet: matched prefix \"%s\" with delimiter pid=%d%s\n", prefix, getpid(), claimed ? "" : " (duplicate suppressed)");
+                fprintf(stderr, "snippet: matched prefix \"%s\" with delimiter replacementLen=%zu pid=%d%s\n", prefix, strlen(content), getpid(), claimed ? "" : " (duplicate suppressed)");
                 pthread_mutex_unlock(&g_snippet_mutex);
                 if (claimed) {
                     performSnippetExpansion(triggerLen, replacement);
