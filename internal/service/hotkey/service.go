@@ -136,8 +136,8 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
         int nonShiftMods = masked & ~kCGEventFlagMaskShift;
         if (nonShiftMods == 0) {
             g_debug_keycount++;
-            if (keyCode == 36 || keyCode == 48 || keyCode == 53 || keyCode == 49) {
-                // Return, Tab, Escape, Space → clear buffer
+            if (keyCode == 53) {
+                // Escape → clear buffer
                 snippetBufClear();
             } else if (keyCode == 51) {
                 // Backspace → remove last char
@@ -145,6 +145,10 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
                     g_snippet_len--;
                     g_snippet_buf[g_snippet_len] = '\0';
                 }
+            } else if (keyCode == 36) {
+                snippetBufAppend('\n');
+            } else if (keyCode == 48) {
+                snippetBufAppend('\t');
             } else {
                 char c = keycodeToChar(keyCode);
                 if (c != 0) {
@@ -465,16 +469,13 @@ func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() 
 				sort.Slice(prefixes, func(i, j int) bool {
 					return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
 				})
-				for _, prefix := range prefixes {
-					if strings.HasSuffix(buf, prefix) {
-						content := lookup(prefix)
-						if content != nil {
-							log.Printf("snippet: MATCH! expanding prefix %q → %d chars", prefix, len(*content))
-							s.expandSnippet(prefix, *content)
-							C.clearSnippetBuffer()
-							lastBuf = ""
-							break
-						}
+				if match, ok := matchSnippetTrigger(buf, prefixes); ok {
+					content := lookup(match.prefix)
+					if content != nil {
+						log.Printf("snippet: MATCH! expanding prefix %q → %d chars", match.prefix, len(*content))
+						s.expandSnippet(match.deleteText, *content+match.keepText)
+						C.clearSnippetBuffer()
+						lastBuf = ""
 					}
 				}
 			}
@@ -485,7 +486,39 @@ func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() 
 	log.Println("snippet: auto-expand active")
 }
 
-func (s *Service) expandSnippet(prefix string, content string) {
+type snippetTriggerMatch struct {
+	prefix     string
+	deleteText string
+	keepText   string
+}
+
+func matchSnippetTrigger(buf string, prefixes []string) (snippetTriggerMatch, bool) {
+	for _, prefix := range prefixes {
+		if prefix == "" {
+			continue
+		}
+		if strings.HasSuffix(buf, prefix) {
+			return snippetTriggerMatch{
+				prefix:     prefix,
+				deleteText: prefix,
+			}, true
+		}
+
+		for _, delimiter := range []string{" ", "\t", "\n"} {
+			trigger := prefix + delimiter
+			if strings.HasSuffix(buf, trigger) {
+				return snippetTriggerMatch{
+					prefix:     prefix,
+					deleteText: trigger,
+					keepText:   delimiter,
+				}, true
+			}
+		}
+	}
+	return snippetTriggerMatch{}, false
+}
+
+func (s *Service) expandSnippet(trigger string, content string) {
 	// 1. Save current clipboard
 	oldClip := C.getClipboardText()
 	var oldClipStr string
@@ -495,7 +528,7 @@ func (s *Service) expandSnippet(prefix string, content string) {
 	}
 
 	// 2. Send backspaces to delete the prefix
-	C.sendBackspaces(C.int(utf8.RuneCountInString(prefix)))
+	C.sendBackspaces(C.int(utf8.RuneCountInString(trigger)))
 	time.Sleep(50 * time.Millisecond)
 
 	// 3. Set clipboard to snippet content
