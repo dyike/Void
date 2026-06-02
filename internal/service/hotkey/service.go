@@ -247,6 +247,14 @@ static int checkAccessibility(int prompt) {
     CFRelease(opts);
     return trusted;
 }
+
+static int checkListenEventAccess(void) {
+    return CGPreflightListenEventAccess() ? 1 : 0;
+}
+
+static int requestListenEventAccess(void) {
+    return CGRequestListenEventAccess() ? 1 : 0;
+}
 */
 import "C"
 import (
@@ -374,6 +382,12 @@ func NewService() *Service { return &Service{} }
 
 func HasPermission() bool { return C.checkAccessibility(0) != 0 }
 func RequestPermission()  { C.checkAccessibility(1) }
+func HasListenEventPermission() bool {
+	return C.checkListenEventAccess() != 0
+}
+func RequestListenEventPermission() bool {
+	return C.requestListenEventAccess() != 0
+}
 
 func (s *Service) Start(h func(), keySpec string) bool {
 	if !s.configureKey(keySpec) {
@@ -423,6 +437,13 @@ func (s *Service) startTap(h func()) bool {
 		RequestPermission()
 		if !HasPermission() {
 			log.Println("hotkey: Accessibility not granted — check System Settings → Privacy & Security → Accessibility")
+			return false
+		}
+	}
+	if !HasListenEventPermission() {
+		log.Println("hotkey: requesting Input Monitoring permission…")
+		if !RequestListenEventPermission() || !HasListenEventPermission() {
+			log.Println("hotkey: Input Monitoring not granted — check System Settings → Privacy & Security → Input Monitoring")
 			return false
 		}
 	}
