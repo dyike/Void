@@ -3,13 +3,17 @@
 package hotkey
 
 /*
-#cgo CFLAGS: -x objective-c
+#cgo CFLAGS: -x objective-c -fblocks
 #cgo LDFLAGS: -framework CoreGraphics -framework CoreFoundation -framework ApplicationServices -framework AppKit
 
 #include <CoreGraphics/CoreGraphics.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <ApplicationServices/ApplicationServices.h>
 #include <AppKit/AppKit.h>
+#include <dispatch/dispatch.h>
+#include <pthread.h>
+#include <stdlib.h>
+#include <string.h>
 
 // ── Configurable hotkey ───────────────────────────────────────────────────
 
@@ -28,7 +32,18 @@ static char g_snippet_buf[SNIPPET_BUF_SIZE];
 static int  g_snippet_len = 0;
 static volatile int g_debug_keycount = 0;  // debug: count keyDown events that reach buffer code
 
+#define MAX_SNIPPET_RULES 128
+static char* g_snippet_prefixes[MAX_SNIPPET_RULES];
+static char* g_snippet_contents[MAX_SNIPPET_RULES];
+static int   g_snippet_rule_count = 0;
+static pthread_mutex_t g_snippet_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 static int getDebugKeyCount(void) { return g_debug_keycount; }
+
+static void sendBackspaces(int n);
+static void pasteClipboard(void);
+static void setClipboardText(const char *text);
+static char* getClipboardText(void);
 
 static char keycodeToChar(CGKeyCode kc) {
     switch (kc) {
@@ -86,6 +101,107 @@ static const char* getSnippetBuffer(void) {
 
 static void clearSnippetBuffer(void) {
     snippetBufClear();
+}
+
+static void clearSnippetRules(void) {
+    pthread_mutex_lock(&g_snippet_mutex);
+    for (int i = 0; i < g_snippet_rule_count; i++) {
+        if (g_snippet_prefixes[i]) free(g_snippet_prefixes[i]);
+        if (g_snippet_contents[i]) free(g_snippet_contents[i]);
+        g_snippet_prefixes[i] = NULL;
+        g_snippet_contents[i] = NULL;
+    }
+    g_snippet_rule_count = 0;
+    pthread_mutex_unlock(&g_snippet_mutex);
+}
+
+static void addSnippetRule(const char *prefix, const char *content) {
+    if (prefix == NULL || content == NULL || prefix[0] == '\0') return;
+
+    pthread_mutex_lock(&g_snippet_mutex);
+    if (g_snippet_rule_count < MAX_SNIPPET_RULES) {
+        g_snippet_prefixes[g_snippet_rule_count] = strdup(prefix);
+        g_snippet_contents[g_snippet_rule_count] = strdup(content);
+        g_snippet_rule_count++;
+    }
+    pthread_mutex_unlock(&g_snippet_mutex);
+}
+
+static int snippetBufHasSuffix(const char *suffix) {
+    size_t bufLen = strlen(g_snippet_buf);
+    size_t suffixLen = strlen(suffix);
+    if (suffixLen == 0 || suffixLen > bufLen) return 0;
+    return strcmp(g_snippet_buf + (bufLen - suffixLen), suffix) == 0;
+}
+
+static void performSnippetExpansion(int triggerLen, const char *replacement) {
+    if (triggerLen <= 0 || replacement == NULL) return;
+
+    char *replacementCopy = strdup(replacement);
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
+        char *oldClip = getClipboardText();
+
+        sendBackspaces(triggerLen);
+        usleep(50000);
+
+        setClipboardText(replacementCopy);
+        usleep(30000);
+
+        pasteClipboard();
+        usleep(100000);
+
+        if (oldClip != NULL) {
+            setClipboardText(oldClip);
+            free(oldClip);
+        }
+        free(replacementCopy);
+    });
+}
+
+static void tryExpandSnippetRules(void) {
+    pthread_mutex_lock(&g_snippet_mutex);
+    for (int i = 0; i < g_snippet_rule_count; i++) {
+        const char *prefix = g_snippet_prefixes[i];
+        const char *content = g_snippet_contents[i];
+        if (prefix == NULL || content == NULL) continue;
+
+        if (snippetBufHasSuffix(prefix)) {
+            char *replacement = strdup(content);
+            int triggerLen = (int)strlen(prefix);
+            pthread_mutex_unlock(&g_snippet_mutex);
+            performSnippetExpansion(triggerLen, replacement);
+            free(replacement);
+            snippetBufClear();
+            return;
+        }
+
+        const char delimiters[] = {' ', '\t', '\n'};
+        for (int d = 0; d < 3; d++) {
+            char delimiter = delimiters[d];
+            size_t prefixLen = strlen(prefix);
+            char trigger[SNIPPET_BUF_SIZE];
+            if (prefixLen + 1 >= sizeof(trigger)) continue;
+            memcpy(trigger, prefix, prefixLen);
+            trigger[prefixLen] = delimiter;
+            trigger[prefixLen + 1] = '\0';
+
+            if (snippetBufHasSuffix(trigger)) {
+                size_t contentLen = strlen(content);
+                char *replacement = (char*)malloc(contentLen + 2);
+                if (replacement == NULL) continue;
+                memcpy(replacement, content, contentLen);
+                replacement[contentLen] = delimiter;
+                replacement[contentLen + 1] = '\0';
+                int triggerLen = (int)(prefixLen + 1);
+                pthread_mutex_unlock(&g_snippet_mutex);
+                performSnippetExpansion(triggerLen, replacement);
+                free(replacement);
+                snippetBufClear();
+                return;
+            }
+        }
+    }
+    pthread_mutex_unlock(&g_snippet_mutex);
 }
 
 // ── Synthetic key events ──────────────────────────────────────────────────
@@ -157,8 +273,10 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
                 }
             } else if (keyCode == 36) {
                 snippetBufAppend('\n');
+                tryExpandSnippetRules();
             } else if (keyCode == 48) {
                 snippetBufAppend('\t');
+                tryExpandSnippetRules();
             } else {
                 char c = eventToASCIIChar(event);
                 if (c == 0) {
@@ -195,6 +313,7 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
                         }
                     }
                     snippetBufAppend(c);
+                    tryExpandSnippetRules();
                 }
             }
         } else {
@@ -494,36 +613,53 @@ type SnippetLookupFn func(prefix string) *string
 // StartSnippetExpand starts a goroutine that monitors typed characters
 // and expands snippet prefixes.
 func (s *Service) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() []string) {
-	prefixes := getPrefixes()
-	log.Printf("snippet: auto-expand active with %d prefix(es): %s", len(prefixes), strings.Join(prefixes, ", "))
+	lastRulesSignature := syncSnippetRules(lookup, getPrefixes, "")
 	go func() {
-		var lastBuf string
 		for running.Load() {
-			buf := C.GoString(C.getSnippetBuffer())
-
-			if buf != lastBuf && len(buf) > 0 {
-				lastBuf = buf
-				prefixes := getPrefixes()
-				sort.Slice(prefixes, func(i, j int) bool {
-					return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
-				})
-				if len(prefixes) > 0 && strings.Contains(buf, ";") {
-					log.Printf("snippet: buffer=%q", buf)
-				}
-				if match, ok := matchSnippetTrigger(buf, prefixes); ok {
-					content := lookup(match.prefix)
-					if content != nil {
-						log.Printf("snippet: MATCH! prefix=%q trigger=%q replacement=%d chars", match.prefix, match.deleteText, utf8.RuneCountInString(*content))
-						s.expandSnippet(match.deleteText, *content+match.keepText)
-						C.clearSnippetBuffer()
-						lastBuf = ""
-					}
-				}
-			}
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(2 * time.Second)
+			lastRulesSignature = syncSnippetRules(lookup, getPrefixes, lastRulesSignature)
 		}
 		log.Println("snippet: goroutine exited (running=false)")
 	}()
+}
+
+func syncSnippetRules(lookup SnippetLookupFn, getPrefixes func() []string, lastSignature string) string {
+	prefixes := getPrefixes()
+	sort.Slice(prefixes, func(i, j int) bool {
+		return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
+	})
+
+	active := make([]string, 0, len(prefixes))
+	contents := make(map[string]string, len(prefixes))
+	var signature strings.Builder
+	for _, prefix := range prefixes {
+		content := lookup(prefix)
+		if prefix == "" || content == nil {
+			continue
+		}
+		active = append(active, prefix)
+		contents[prefix] = *content
+		signature.WriteString(prefix)
+		signature.WriteByte(0)
+		signature.WriteString(*content)
+		signature.WriteByte(0)
+	}
+
+	nextSignature := signature.String()
+	if nextSignature == lastSignature {
+		return lastSignature
+	}
+
+	C.clearSnippetRules()
+	for _, prefix := range active {
+		cPrefix := C.CString(prefix)
+		cContent := C.CString(contents[prefix])
+		C.addSnippetRule(cPrefix, cContent)
+		C.free(unsafe.Pointer(cPrefix))
+		C.free(unsafe.Pointer(cContent))
+	}
+	log.Printf("snippet: auto-expand active with %d prefix(es): %s", len(active), strings.Join(active, ", "))
+	return nextSignature
 }
 
 type snippetTriggerMatch struct {
