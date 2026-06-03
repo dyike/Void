@@ -63,3 +63,34 @@ func TestSanitizeHistoryDropsBadTextItems(t *testing.T) {
 		t.Fatalf("unexpected sanitized history: %#v", got)
 	}
 }
+
+func TestAddItemMovesDuplicateToTop(t *testing.T) {
+	clipboardRepo := NewClipboardRepo(t.TempDir())
+	clipboardRepo.AddItem("first", "text")
+	clipboardRepo.AddItem("second", "text")
+	clipboardRepo.AddItem("first", "text")
+
+	got := clipboardRepo.GetHistory()
+	if len(got) != 2 {
+		t.Fatalf("expected unique history, got %d items: %#v", len(got), got)
+	}
+	if got[0].Content != "first" || got[1].Content != "second" {
+		t.Fatalf("unexpected order after duplicate insert: %#v", got)
+	}
+}
+
+func TestSanitizeHistoryDeduplicatesItems(t *testing.T) {
+	items := []model.ClipboardItem{
+		{ID: "new", Type: "text", Content: "same", Preview: "same"},
+		{ID: "old", Type: "text", Content: "same", Preview: "same"},
+		{ID: "other", Type: "url", Content: "https://example.com", Preview: "https://example.com"},
+	}
+
+	got := sanitizeHistory(items)
+	if len(got) != 2 {
+		t.Fatalf("expected sanitized unique history, got %#v", got)
+	}
+	if got[0].ID != "new" || got[1].ID != "other" {
+		t.Fatalf("unexpected sanitized history order: %#v", got)
+	}
+}

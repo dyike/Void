@@ -43,7 +43,7 @@ func (s *ClipboardService) PasteItem(id string) error {
 	if item == nil {
 		return fmt.Errorf("item not found: %s", id)
 	}
-	return s.repo.WriteToClipboard(item.Content)
+	return s.repo.WriteItemToClipboard(*item)
 }
 
 // CopyItem copies the item to clipboard (alias for PasteItem).
@@ -63,7 +63,7 @@ func (s *ClipboardService) ClearHistory() error {
 }
 
 func (s *ClipboardService) poll() {
-	lastContent := s.repo.LastContent()
+	lastFingerprint := s.repo.LastFingerprint()
 	ticker := time.NewTicker(750 * time.Millisecond)
 	defer ticker.Stop()
 	for {
@@ -72,10 +72,17 @@ func (s *ClipboardService) poll() {
 			return
 		case <-ticker.C:
 			content, ctype := s.repo.ReadClipboard()
-			if content == "" || content == lastContent {
+			if content == "" {
 				continue
 			}
-			lastContent = content
+			fingerprint := ctype + ":" + content
+			if ctype == "url" {
+				fingerprint = "text:" + content
+			}
+			if fingerprint == lastFingerprint {
+				continue
+			}
+			lastFingerprint = fingerprint
 			s.repo.AddItem(content, ctype)
 		}
 	}

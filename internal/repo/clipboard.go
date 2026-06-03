@@ -1,9 +1,86 @@
 package repo
 
+/*
+#cgo CFLAGS: -x objective-c
+#cgo LDFLAGS: -framework AppKit
+
+#include <AppKit/AppKit.h>
+#include <stdlib.h>
+
+static char* clipboardFilePaths(void) {
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    NSDictionary *options = @{NSPasteboardURLReadingFileURLsOnlyKey: @YES};
+    NSArray *urls = [pb readObjectsForClasses:@[[NSURL class]] options:options];
+    if (urls == nil || [urls count] == 0) return NULL;
+
+    NSMutableArray *paths = [NSMutableArray arrayWithCapacity:[urls count]];
+    for (NSURL *url in urls) {
+        if ([url isFileURL] && [url path] != nil) {
+            [paths addObject:[url path]];
+        }
+    }
+    if ([paths count] == 0) return NULL;
+
+    NSString *joined = [paths componentsJoinedByString:@"\n"];
+    return strdup([joined UTF8String]);
+}
+
+static int clipboardPNGToFile(const char *path) {
+    if (path == NULL) return 0;
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    NSData *pngData = [pb dataForType:NSPasteboardTypePNG];
+
+    if (pngData == nil) {
+        NSData *tiffData = [pb dataForType:NSPasteboardTypeTIFF];
+        if (tiffData != nil) {
+            NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:tiffData];
+            if (rep != nil) {
+                pngData = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+            }
+        }
+    }
+    if (pngData == nil || [pngData length] == 0) return 0;
+
+    NSString *dest = [NSString stringWithUTF8String:path];
+    return [pngData writeToFile:dest atomically:YES] ? 1 : 0;
+}
+
+static int setClipboardFilePaths(const char *pathsText) {
+    if (pathsText == NULL) return 0;
+    NSString *raw = [NSString stringWithUTF8String:pathsText];
+    NSArray *lines = [raw componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+    NSMutableArray *urls = [NSMutableArray array];
+
+    for (NSString *line in lines) {
+        if ([line length] == 0) continue;
+        NSURL *url = [NSURL fileURLWithPath:line];
+        if (url != nil) [urls addObject:url];
+    }
+    if ([urls count] == 0) return 0;
+
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    [pb clearContents];
+    return [pb writeObjects:urls] ? 1 : 0;
+}
+
+static int setClipboardPNGFile(const char *path) {
+    if (path == NULL) return 0;
+    NSString *src = [NSString stringWithUTF8String:path];
+    NSData *data = [NSData dataWithContentsOfFile:src];
+    if (data == nil || [data length] == 0) return 0;
+
+    NSPasteboard *pb = [NSPasteboard generalPasteboard];
+    [pb clearContents];
+    return [pb setData:data forType:NSPasteboardTypePNG] ? 1 : 0;
+}
+*/
+import "C"
 import (
 	"bytes"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -14,6 +91,7 @@ import (
 	"time"
 	"unicode"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/dyike/Void/internal/model"
 )
@@ -45,6 +123,16 @@ func (r *ClipboardRepo) LastContent() string {
 	return ""
 }
 
+// LastFingerprint returns the most recently added clipboard fingerprint.
+func (r *ClipboardRepo) LastFingerprint() string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	if len(r.history) > 0 {
+		return clipboardFingerprint(r.history[0])
+	}
+	return ""
+}
+
 // GetHistory returns all clipboard history items (newest first).
 func (r *ClipboardRepo) GetHistory() []model.ClipboardItem {
 	r.mu.RLock()
@@ -59,7 +147,11 @@ func (r *ClipboardRepo) AddItem(content, ctype string) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	preview := truncateRunes(content, 200)
+	content = normalizeClipboardContent(content, ctype)
+	if content == "" {
+		return
+	}
+	preview := clipboardPreview(content, ctype)
 	item := model.ClipboardItem{
 		ID:        clipboardNewID(),
 		Type:      ctype,
@@ -67,6 +159,16 @@ func (r *ClipboardRepo) AddItem(content, ctype string) {
 		Preview:   preview,
 		Timestamp: time.Now().UnixMilli(),
 	}
+
+	itemKey := clipboardFingerprint(item)
+	deduped := r.history[:0]
+	for _, existing := range r.history {
+		if clipboardFingerprint(existing) == itemKey {
+			continue
+		}
+		deduped = append(deduped, existing)
+	}
+	r.history = deduped
 	r.history = append([]model.ClipboardItem{item}, r.history...)
 	if len(r.history) > maxClipboardHistory {
 		r.history = r.history[:maxClipboardHistory]
@@ -109,8 +211,15 @@ func (r *ClipboardRepo) Clear() {
 	r.saveToDisk()
 }
 
-// ReadClipboard reads the current system clipboard content via pbpaste.
+// ReadClipboard reads the current system clipboard content.
 func (r *ClipboardRepo) ReadClipboard() (content, ctype string) {
+	if paths := readClipboardFilePaths(); paths != "" {
+		return paths, "file"
+	}
+	if imagePath := r.readClipboardImage(); imagePath != "" {
+		return imagePath, "image"
+	}
+
 	out, err := exec.Command("pbpaste", "-Prefer", "txt").Output()
 	if err != nil {
 		out, err = exec.Command("pbpaste").Output()
@@ -134,8 +243,27 @@ func (r *ClipboardRepo) WriteToClipboard(content string) error {
 	return cmd.Run()
 }
 
+// WriteItemToClipboard writes a typed history item back to the system clipboard.
+func (r *ClipboardRepo) WriteItemToClipboard(item model.ClipboardItem) error {
+	switch item.Type {
+	case "file":
+		if writeClipboardFilePaths(item.Content) {
+			return nil
+		}
+	case "image":
+		if writeClipboardPNGFile(item.Content) {
+			return nil
+		}
+	}
+	return r.WriteToClipboard(item.Content)
+}
+
 func (r *ClipboardRepo) historyPath() string {
 	return filepath.Join(r.dataDir, "clipboard-history.json")
+}
+
+func (r *ClipboardRepo) assetsDir() string {
+	return filepath.Join(r.dataDir, "clipboard-assets")
 }
 
 func (r *ClipboardRepo) loadFromDisk() {
@@ -165,6 +293,64 @@ func clipboardNewID() string {
 	b := make([]byte, 8)
 	_, _ = rand.Read(b)
 	return base64.RawURLEncoding.EncodeToString(b)
+}
+
+func readClipboardFilePaths() string {
+	p := C.clipboardFilePaths()
+	if p == nil {
+		return ""
+	}
+	defer C.free(unsafe.Pointer(p))
+	return normalizeFilePaths(C.GoString(p))
+}
+
+func (r *ClipboardRepo) readClipboardImage() string {
+	if err := os.MkdirAll(r.assetsDir(), 0755); err != nil {
+		return ""
+	}
+	tmp, err := os.CreateTemp(r.assetsDir(), "clipboard-image-*.png")
+	if err != nil {
+		return ""
+	}
+	tmpPath := tmp.Name()
+	_ = tmp.Close()
+
+	cPath := C.CString(tmpPath)
+	ok := C.clipboardPNGToFile(cPath) != 0
+	C.free(unsafe.Pointer(cPath))
+	if !ok {
+		_ = os.Remove(tmpPath)
+		return ""
+	}
+
+	data, err := os.ReadFile(tmpPath)
+	if err != nil || len(data) == 0 {
+		_ = os.Remove(tmpPath)
+		return ""
+	}
+	sum := sha256.Sum256(data)
+	finalPath := filepath.Join(r.assetsDir(), hex.EncodeToString(sum[:])+".png")
+	if err := os.Rename(tmpPath, finalPath); err != nil {
+		if _, statErr := os.Stat(finalPath); statErr == nil {
+			_ = os.Remove(tmpPath)
+		} else {
+			_ = os.Remove(tmpPath)
+			return ""
+		}
+	}
+	return finalPath
+}
+
+func writeClipboardFilePaths(paths string) bool {
+	cPaths := C.CString(paths)
+	defer C.free(unsafe.Pointer(cPaths))
+	return C.setClipboardFilePaths(cPaths) != 0
+}
+
+func writeClipboardPNGFile(path string) bool {
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+	return C.setClipboardPNGFile(cPath) != 0
 }
 
 func isURL(s string) bool {
@@ -201,7 +387,9 @@ func isReadableText(text string) bool {
 
 func sanitizeHistory(items []model.ClipboardItem) []model.ClipboardItem {
 	result := make([]model.ClipboardItem, 0, len(items))
+	seen := make(map[string]bool, len(items))
 	for _, item := range items {
+		item.Content = normalizeClipboardContent(item.Content, item.Type)
 		if item.Content == "" {
 			continue
 		}
@@ -215,10 +403,67 @@ func sanitizeHistory(items []model.ClipboardItem) []model.ClipboardItem {
 				preview = item.Content
 			}
 			item.Preview = truncateRunes(preview, 200)
+		case "file":
+			item.Preview = clipboardPreview(item.Content, item.Type)
+		case "image":
+			if _, err := os.Stat(item.Content); err != nil {
+				continue
+			}
+			item.Preview = clipboardPreview(item.Content, item.Type)
 		}
+		key := clipboardFingerprint(item)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
 		result = append(result, item)
 	}
 	return result
+}
+
+func normalizeClipboardContent(content, ctype string) string {
+	switch ctype {
+	case "file":
+		return normalizeFilePaths(content)
+	default:
+		return strings.TrimRight(content, "\r\n")
+	}
+}
+
+func normalizeFilePaths(content string) string {
+	lines := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
+	paths := make([]string, 0, len(lines))
+	for _, line := range lines {
+		path := strings.TrimSpace(line)
+		if path == "" {
+			continue
+		}
+		paths = append(paths, path)
+	}
+	return strings.Join(paths, "\n")
+}
+
+func clipboardPreview(content, ctype string) string {
+	switch ctype {
+	case "file":
+		paths := strings.Split(content, "\n")
+		if len(paths) == 1 {
+			return filepath.Base(paths[0])
+		}
+		return fmt.Sprintf("%s and %d more", filepath.Base(paths[0]), len(paths)-1)
+	case "image":
+		return filepath.Base(content)
+	default:
+		return truncateRunes(content, 200)
+	}
+}
+
+func clipboardFingerprint(item model.ClipboardItem) string {
+	content := normalizeClipboardContent(item.Content, item.Type)
+	if item.Type == "url" {
+		return "text:" + content
+	}
+	return item.Type + ":" + content
 }
 
 func truncateRunes(s string, max int) string {

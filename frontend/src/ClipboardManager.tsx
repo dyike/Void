@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
-import { FileText, Link, Image as ImageIcon, Trash2, Copy, Clipboard } from 'lucide-react'
+import { File, FileText, Link, Image as ImageIcon, Trash2, Copy, Clipboard } from 'lucide-react'
 import * as ClipboardService from '../bindings/github.com/dyike/Void/internal/service/clipboardservice.js'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -106,8 +106,12 @@ const ClipboardManager: React.FC<Props> = ({ onClose }) => {
     const typeIcon = (type: string) => {
         if (type === 'url') return <Link size={14} />
         if (type === 'image') return <ImageIcon size={14} />
+        if (type === 'file') return <File size={14} />
         return <FileText size={14} />
     }
+
+    const filePaths = (item: ClipboardItem) =>
+        item.content.split(/\r?\n/).map(path => path.trim()).filter(Boolean)
 
     return (
         <div className="flex min-h-0 flex-1 flex-col" onKeyDown={handleKeyDown}>
@@ -167,10 +171,23 @@ const ClipboardManager: React.FC<Props> = ({ onClose }) => {
                         <>
                             {selectedItem.type === 'image' ? (
                                 <img
-                                    src={`file://${selectedItem.content}`}
+                                    src={`file://${encodeURI(selectedItem.content)}`}
                                     alt="Clipboard"
                                     className="w-full rounded-lg border border-border"
                                 />
+                            ) : selectedItem.type === 'file' ? (
+                                <div className="rounded-lg border border-border bg-secondary/30 p-3">
+                                    <div className="mb-2 text-xs font-medium text-muted-foreground">
+                                        {filePaths(selectedItem).length} file{filePaths(selectedItem).length === 1 ? '' : 's'}
+                                    </div>
+                                    <div className="space-y-1.5">
+                                        {filePaths(selectedItem).map(path => (
+                                            <div key={path} className="truncate rounded bg-background/40 px-2 py-1.5 font-mono text-xs text-foreground/80" title={path}>
+                                                {path}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
                             ) : (
                                 <pre className="whitespace-pre-wrap break-all rounded-lg border border-border bg-secondary/30 p-3 text-xs text-foreground/80">
                                     {selectedItem.content}

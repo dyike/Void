@@ -49,6 +49,7 @@ static void sendBackspaces(int n);
 static void pasteClipboard(void);
 static void setClipboardText(const char *text);
 static char* getClipboardText(void);
+static char* focusedTextBeforeCursor(int maxChars);
 
 static char keycodeToChar(CGKeyCode kc) {
     switch (kc) {
@@ -155,27 +156,61 @@ static int snippetBufHasSuffix(const char *suffix) {
 }
 
 static void performSnippetExpansion(int triggerLen, const char *replacement) {
-    if (triggerLen <= 0 || replacement == NULL) return;
+	if (triggerLen <= 0 || replacement == NULL) return;
 
     char *replacementCopy = strdup(replacement);
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, 30 * NSEC_PER_MSEC), dispatch_get_main_queue(), ^{
-        char *oldClip = getClipboardText();
-
         sendBackspaces(triggerLen);
-        usleep(50000);
+        usleep(150000);
 
         setClipboardText(replacementCopy);
-        usleep(30000);
+        usleep(50000);
 
         pasteClipboard();
-        usleep(2000000);
-
-        if (oldClip != NULL) {
-            setClipboardText(oldClip);
-            free(oldClip);
-        }
         free(replacementCopy);
     });
+}
+
+static char* focusedTextBeforeCursor(int maxChars) {
+    AXUIElementRef systemWide = AXUIElementCreateSystemWide();
+    if (systemWide == NULL) return NULL;
+
+    AXUIElementRef focused = NULL;
+    AXError err = AXUIElementCopyAttributeValue(systemWide, kAXFocusedUIElementAttribute, (CFTypeRef *)&focused);
+    CFRelease(systemWide);
+    if (err != kAXErrorSuccess || focused == NULL) return NULL;
+
+    CFTypeRef valueRef = NULL;
+    err = AXUIElementCopyAttributeValue(focused, kAXValueAttribute, &valueRef);
+    if (err != kAXErrorSuccess || valueRef == NULL || CFGetTypeID(valueRef) != CFStringGetTypeID()) {
+        if (valueRef != NULL) CFRelease(valueRef);
+        CFRelease(focused);
+        return NULL;
+    }
+
+    NSString *value = (NSString *)valueRef;
+    NSUInteger length = [value length];
+    NSUInteger cursor = length;
+
+    CFTypeRef rangeRef = NULL;
+    err = AXUIElementCopyAttributeValue(focused, kAXSelectedTextRangeAttribute, &rangeRef);
+    if (err == kAXErrorSuccess && rangeRef != NULL && CFGetTypeID(rangeRef) == AXValueGetTypeID()) {
+        CFRange range;
+        if (AXValueGetValue((AXValueRef)rangeRef, kAXValueCFRangeType, &range) && range.location >= 0) {
+            cursor = (NSUInteger)range.location;
+            if (cursor > length) cursor = length;
+        }
+    }
+    if (rangeRef != NULL) CFRelease(rangeRef);
+
+    NSUInteger limit = maxChars > 0 ? (NSUInteger)maxChars : 80;
+    NSUInteger start = cursor > limit ? cursor - limit : 0;
+    NSString *before = [value substringWithRange:NSMakeRange(start, cursor - start)];
+    char *out = strdup([before UTF8String]);
+
+    CFRelease(valueRef);
+    CFRelease(focused);
+    return out;
 }
 
 static long long nowMillis(void) {
@@ -659,6 +694,13 @@ type snippetTriggerMatch struct {
 	keepText   string
 }
 
+// SnippetTriggerMatch describes a snippet trigger found at the end of a text buffer.
+type SnippetTriggerMatch struct {
+	Prefix     string
+	DeleteText string
+	KeepText   string
+}
+
 func matchSnippetTrigger(buf string, prefixes []string) (snippetTriggerMatch, bool) {
 	buf = NormalizeSnippetTriggerText(buf)
 	for _, prefix := range prefixes {
@@ -685,6 +727,40 @@ func matchSnippetTrigger(buf string, prefixes []string) (snippetTriggerMatch, bo
 		}
 	}
 	return snippetTriggerMatch{}, false
+}
+
+// MatchSnippetTrigger finds a snippet trigger at the end of a text buffer.
+func MatchSnippetTrigger(buf string, prefixes []string) (SnippetTriggerMatch, bool) {
+	match, ok := matchSnippetTrigger(buf, prefixes)
+	if !ok {
+		return SnippetTriggerMatch{}, false
+	}
+	return SnippetTriggerMatch{
+		Prefix:     match.prefix,
+		DeleteText: match.deleteText,
+		KeepText:   match.keepText,
+	}, true
+}
+
+// FocusedTextBeforeCursor returns text before the cursor in the focused input field.
+func (r *HotkeyRepo) FocusedTextBeforeCursor(maxChars int) string {
+	p := C.focusedTextBeforeCursor(C.int(maxChars))
+	if p == nil {
+		return ""
+	}
+	s := C.GoString(p)
+	C.free(unsafe.Pointer(p))
+	return s
+}
+
+// ExpandSnippet deletes the trigger before the cursor and pastes the replacement.
+func (r *HotkeyRepo) ExpandSnippet(deleteChars int, replacement string) {
+	if deleteChars <= 0 || replacement == "" {
+		return
+	}
+	cReplacement := C.CString(replacement)
+	C.performSnippetExpansion(C.int(deleteChars), cReplacement)
+	C.free(unsafe.Pointer(cReplacement))
 }
 
 // GetClipboardText returns the current clipboard text via AppKit.

@@ -6,6 +6,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unicode/utf8"
@@ -17,7 +18,10 @@ var running atomic.Bool
 
 // HotkeyService manages global hotkey registration and snippet auto-expansion.
 type HotkeyService struct {
-	repo *repo.HotkeyRepo
+	repo            *repo.HotkeyRepo
+	snippetMu       sync.RWMutex
+	snippetLookup   SnippetLookupFn
+	snippetPrefixes func() []string
 }
 
 // NewHotkeyService creates a new hotkey service.
@@ -74,6 +78,10 @@ func (s *HotkeyService) startTap(h func()) bool {
 	go func() {
 		for running.Load() {
 			if s.repo.PollHotkey() {
+				if s.TryExpandFocusedSnippet() {
+					time.Sleep(20 * time.Millisecond)
+					continue
+				}
 				h()
 			}
 			time.Sleep(20 * time.Millisecond)
@@ -88,6 +96,11 @@ type SnippetLookupFn func(prefix string) *string
 // StartSnippetExpand starts a goroutine that monitors typed characters
 // and expands snippet prefixes.
 func (s *HotkeyService) StartSnippetExpand(lookup SnippetLookupFn, getPrefixes func() []string) {
+	s.snippetMu.Lock()
+	s.snippetLookup = lookup
+	s.snippetPrefixes = getPrefixes
+	s.snippetMu.Unlock()
+
 	lastRulesSignature := s.syncSnippetRules(lookup, getPrefixes, "")
 	go func() {
 		for running.Load() {
@@ -135,4 +148,51 @@ func (s *HotkeyService) syncSnippetRules(lookup SnippetLookupFn, getPrefixes fun
 	}
 	log.Printf("snippet: auto-expand active with %d prefix(es): %s", len(active), strings.Join(active, ", "))
 	return nextSignature
+}
+
+// TryExpandFocusedSnippet expands a trigger already present in the focused input.
+// This is a fallback for remote input paths that do not emit per-key CGEvents.
+func (s *HotkeyService) TryExpandFocusedSnippet() bool {
+	s.snippetMu.RLock()
+	lookup := s.snippetLookup
+	getPrefixes := s.snippetPrefixes
+	s.snippetMu.RUnlock()
+	if lookup == nil || getPrefixes == nil {
+		return false
+	}
+
+	beforeCursor := s.repo.FocusedTextBeforeCursor(80)
+	if beforeCursor == "" {
+		return false
+	}
+
+	prefixes := getPrefixes()
+	sort.Slice(prefixes, func(i, j int) bool {
+		return utf8.RuneCountInString(prefixes[i]) > utf8.RuneCountInString(prefixes[j])
+	})
+
+	match, ok := repo.MatchSnippetTrigger(beforeCursor, prefixes)
+	if !ok {
+		return false
+	}
+
+	content := lookup(match.Prefix)
+	if content == nil {
+		for _, rawPrefix := range prefixes {
+			if repo.NormalizeSnippetTriggerText(rawPrefix) == match.Prefix {
+				content = lookup(rawPrefix)
+				break
+			}
+		}
+	}
+	if content == nil {
+		return false
+	}
+
+	replacement := *content + match.KeepText
+	deleteChars := utf8.RuneCountInString(match.DeleteText)
+	log.Printf("snippet: manually expanding focused prefix %q replacementLen=%d", match.Prefix, len(replacement))
+	s.repo.ExpandSnippet(deleteChars, replacement)
+	s.repo.ClearSnippetBuffer()
+	return true
 }
