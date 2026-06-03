@@ -191,7 +191,8 @@ func (m *Manager) setupSystemTray() {
 		return
 	}
 	m.tray = m.app.SystemTray.New()
-	m.tray.SetLabel("Void")
+	m.tray.SetTemplateIcon(buildTrayTemplateIcon())
+	m.tray.SetTooltip("Void")
 
 	trayMenu := m.app.NewMenu()
 	trayMenu.Add("Show Void").OnClick(func(ctx *application.Context) {
