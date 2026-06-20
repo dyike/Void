@@ -14,4 +14,5 @@ var ProviderSet = wire.NewSet(
 	NewCalculatorService,
 	NewScriptsService,
 	NewHotkeyService,
+	NewContainerService,
 )

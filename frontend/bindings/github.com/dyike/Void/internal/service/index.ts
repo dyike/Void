@@ -5,6 +5,7 @@ import * as AIService from "./aiservice.js";
 import * as CalculatorService from "./calculatorservice.js";
 import * as ClipboardService from "./clipboardservice.js";
 import * as CommandService from "./commandservice.js";
+import * as ContainerService from "./containerservice.js";
 import * as ScriptsService from "./scriptsservice.js";
 import * as SettingsService from "./settingsservice.js";
 import * as SnippetService from "./snippetservice.js";
@@ -13,6 +14,7 @@ export {
     CalculatorService,
     ClipboardService,
     CommandService,
+    ContainerService,
     ScriptsService,
     SettingsService,
     SnippetService

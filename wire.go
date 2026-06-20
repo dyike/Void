@@ -20,6 +20,7 @@ type AppServices struct {
 	SnippetsService  *service.SnippetService
 	CalcService      *service.CalculatorService
 	ScriptsService   *service.ScriptsService
+	ContainerService *service.ContainerService
 	HotkeyService    *service.HotkeyService
 	DockService      *dock.DockService
 	WindowManager    *window.Manager
@@ -50,6 +51,7 @@ func ProvideAppServices(
 	snippetsSvc *service.SnippetService,
 	calcSvc *service.CalculatorService,
 	scriptsSvc *service.ScriptsService,
+	containerSvc *service.ContainerService,
 	hotkeySvc *service.HotkeyService,
 	dockSvc *dock.DockService,
 	winManager *window.Manager,
@@ -62,6 +64,7 @@ func ProvideAppServices(
 		SnippetsService:  snippetsSvc,
 		CalcService:      calcSvc,
 		ScriptsService:   scriptsSvc,
+		ContainerService: containerSvc,
 		HotkeyService:    hotkeySvc,
 		DockService:      dockSvc,
 		WindowManager:    winManager,

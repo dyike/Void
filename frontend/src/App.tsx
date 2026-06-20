@@ -4,11 +4,13 @@ import * as CommandsService from '../bindings/github.com/dyike/Void/internal/ser
 import * as CalcService from '../bindings/github.com/dyike/Void/internal/service/calculatorservice.js'
 import * as SettingsService from '../bindings/github.com/dyike/Void/internal/service/settingsservice.js'
 import * as SnippetsService from '../bindings/github.com/dyike/Void/internal/service/snippetservice.js'
+import * as ContainerService from '../bindings/github.com/dyike/Void/internal/service/containerservice.js'
 import ClipboardManager from './ClipboardManager'
 import AiChatView from './AiChatView'
 import SnippetsView from './SnippetsView'
 import ActionPanel, { buildActions } from './ActionPanel'
 import ScriptCommandsView from './ScriptCommandsView'
+import ContainersView from './ContainersView'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
@@ -22,7 +24,7 @@ interface CommandInfo {
   subtitle?: string
   iconDataUrl?: string
   icon?: string
-  category: 'app' | 'settings' | 'system' | 'file' | 'snippet' | 'web-search'
+  category: 'app' | 'settings' | 'system' | 'file' | 'snippet' | 'web-search' | 'container' | 'container-image'
   path?: string
   score?: number
 }
@@ -40,11 +42,21 @@ interface Snippet {
   prefix?: string
 }
 
-type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets' | 'scripts'
+interface ContainerInfo {
+  id: string
+  name: string
+  image: string
+  status: string
+  ports?: string[]
+}
 
-const CATEGORY_ORDER = ['system', 'web-search', 'app', 'snippet', 'file', 'settings']
+type View = 'launcher' | 'clipboard' | 'ai' | 'settings' | 'snippets' | 'scripts' | 'containers'
+
+const CATEGORY_ORDER = ['system', 'container', 'container-image', 'web-search', 'app', 'snippet', 'file', 'settings']
 const CATEGORY_LABELS: Record<string, string> = {
   system: 'Void',
+  container: 'Apple Containers',
+  'container-image': 'Container Images',
   'web-search': 'Web Search',
   app: 'Applications',
   snippet: 'Snippets',
@@ -82,12 +94,14 @@ const App: React.FC = () => {
   const [commands, setCommands] = useState<CommandInfo[]>([])
   const [snippetResults, setSnippetResults] = useState<CommandInfo[]>([])
   const [fileResults, setFileResults] = useState<CommandInfo[]>([])
+  const [containerResults, setContainerResults] = useState<CommandInfo[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [view, setView] = useState<View>('launcher')
   const [showActions, setShowActions] = useState(false)
   const [calcResult, setCalcResult] = useState<CalcResult | null>(null)
   const [activeSearchEngine, setActiveSearchEngine] = useState<typeof SEARCH_ENGINES[0] | null>(null)
+  const [containerFocus, setContainerFocus] = useState<{ id?: string; tab?: 'summary' | 'logs' | 'inspect'; mode?: 'containers' | 'images' | 'run' | 'pull' }>({})
   const inputRef = useRef<HTMLInputElement>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
   const debouncedQuery = useDebounce(query, 200)
@@ -102,6 +116,28 @@ const App: React.FC = () => {
   }, [])
 
   useEffect(() => { fetchCommands() }, [fetchCommands])
+
+  const fetchContainerCommands = useCallback(async () => {
+    try {
+      const containers = ((await ContainerService.ListContainers()) || []) as ContainerInfo[]
+      setContainerResults(containers.map(container => ({
+        id: `container-${container.id}`,
+        title: container.name || container.id,
+        subtitle: [
+          container.status || 'unknown',
+          container.image,
+          (container.ports || []).join(', '),
+        ].filter(Boolean).join(' • '),
+        icon: 'Container',
+        category: 'container' as const,
+        path: container.id,
+      })))
+    } catch {
+      setContainerResults([])
+    }
+  }, [])
+
+  useEffect(() => { fetchContainerCommands() }, [fetchContainerCommands])
 
   // ── Snippet search ────────────────────────────────────────────────────
   useEffect(() => {
@@ -182,8 +218,12 @@ const App: React.FC = () => {
       }]
     }
 
-    return [...base, ...snippetResults, ...goodFiles]
-  }, [commands, fileResults, query, activeSearchEngine, snippetResults])
+    const containerMatches = q
+      ? containerResults.filter(c => `${c.title} ${c.subtitle || ''}`.toLowerCase().includes(q))
+      : []
+
+    return [...base, ...containerMatches, ...snippetResults, ...goodFiles]
+  }, [commands, fileResults, query, activeSearchEngine, snippetResults, containerResults])
 
   const grouped = useMemo(() => {
     const map = new Map<string, CommandInfo[]>()
@@ -246,8 +286,35 @@ const App: React.FC = () => {
       case 'copy-snippet':
         await SnippetsService.CopyToClipboard(cmd.id).catch(() => { })
         break
+      case 'container-open':
+        setContainerFocus({ id: cmd.path, tab: 'summary', mode: 'containers' })
+        setView('containers')
+        break
+      case 'container-logs':
+        setContainerFocus({ id: cmd.path, tab: 'logs', mode: 'containers' })
+        setView('containers')
+        break
+      case 'container-inspect':
+        setContainerFocus({ id: cmd.path, tab: 'inspect', mode: 'containers' })
+        setView('containers')
+        break
+      case 'container-shell':
+        if (cmd.path) await ContainerService.OpenShell(cmd.path).catch(console.error)
+        break
+      case 'container-start':
+        if (cmd.path) await ContainerService.StartContainer(cmd.path).then(fetchContainerCommands).catch(console.error)
+        break
+      case 'container-stop':
+        if (cmd.path) await ContainerService.StopContainer(cmd.path).then(fetchContainerCommands).catch(console.error)
+        break
+      case 'container-restart':
+        if (cmd.path) await ContainerService.RestartContainer(cmd.path).then(fetchContainerCommands).catch(console.error)
+        break
+      case 'container-remove':
+        if (cmd.path) await ContainerService.RemoveContainer(cmd.path).then(fetchContainerCommands).catch(console.error)
+        break
     }
-  }, [flat, selectedIndex])
+  }, [flat, selectedIndex, fetchContainerCommands])
 
   // ── Launch ────────────────────────────────────────────────────────────
   const launchCmd = useCallback(async (cmd: CommandInfo) => {
@@ -255,6 +322,14 @@ const App: React.FC = () => {
     if (cmd.id === 'system-ai-chat') { setView('ai'); return }
     if (cmd.id === 'system-snippets') { setView('snippets'); return }
     if (cmd.id === 'system-scripts') { setView('scripts'); return }
+    if (cmd.id === 'system-apple-containers') { setContainerFocus({ mode: 'containers' }); setView('containers'); return }
+    if (cmd.id === 'system-container-run') { setContainerFocus({ mode: 'run' }); setView('containers'); return }
+    if (cmd.id === 'system-container-pull') { setContainerFocus({ mode: 'pull' }); setView('containers'); return }
+    if (cmd.category === 'container') {
+      setContainerFocus({ id: cmd.path, tab: 'summary', mode: 'containers' })
+      setView('containers')
+      return
+    }
 
     // macOS system actions
     const SYSTEM_ACTIONS = new Set([
@@ -357,7 +432,7 @@ const App: React.FC = () => {
   // ─── Sub-views ─────────────────────────────────────────────────────────
   if (view !== 'launcher') {
     const onBack = () => { setView('launcher'); setQuery('') }
-    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', snippets: 'Snippets', scripts: 'Script Commands' }[view]
+    const title = { clipboard: 'Clipboard History', ai: 'AI Chat', snippets: 'Snippets', scripts: 'Script Commands', containers: 'Apple Containers' }[view]
     return (
       <div className="flex h-full w-full flex-col overflow-hidden rounded-lg border border-launcher-border bg-launcher/85 text-foreground backdrop-blur-3xl" onKeyDown={handleKeyDown}>
         <div className="flex items-center gap-2 border-b border-launcher-border px-4 py-3">
@@ -376,6 +451,13 @@ const App: React.FC = () => {
           {view === 'ai' && <AiChatView />}
           {view === 'snippets' && <SnippetsView />}
           {view === 'scripts' && <ScriptCommandsView />}
+          {view === 'containers' && (
+            <ContainersView
+              initialContainerId={containerFocus.id}
+              initialTab={containerFocus.tab}
+              initialMode={containerFocus.mode}
+            />
+          )}
         </div>
       </div>
     )

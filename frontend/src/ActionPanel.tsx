@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Copy, ExternalLink, Clipboard, Sparkles, Eye } from 'lucide-react'
+import { X, Copy, ExternalLink, Clipboard, Sparkles, Eye, FileText, ListRestart, Play, Square, Terminal, Trash2 } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
@@ -101,6 +101,15 @@ export function buildActions(cmd: { id: string; category: string; title: string;
   } else if (cmd.category === 'snippet') {
     actions.push({ id: 'copy-snippet', label: 'Copy Snippet', icon: <Copy size={14} />, shortcut: '↵' })
     actions.push({ id: 'copy-name', label: 'Copy Name', icon: <Copy size={14} /> })
+  } else if (cmd.category === 'container') {
+    actions.push({ id: 'container-open', label: 'Open in Workspace', icon: <ExternalLink size={14} />, shortcut: '↵' })
+    actions.push({ id: 'container-logs', label: 'Open Logs', icon: <FileText size={14} /> })
+    actions.push({ id: 'container-shell', label: 'Exec Shell', icon: <Terminal size={14} /> })
+    actions.push({ id: 'container-restart', label: 'Restart', icon: <ListRestart size={14} /> })
+    actions.push({ id: 'container-start', label: 'Start', icon: <Play size={14} /> })
+    actions.push({ id: 'container-stop', label: 'Stop', icon: <Square size={14} /> })
+    actions.push({ id: 'container-inspect', label: 'Inspect JSON', icon: <Eye size={14} /> })
+    actions.push({ id: 'container-remove', label: 'Remove', icon: <Trash2 size={14} />, danger: true })
   }
 
   return actions

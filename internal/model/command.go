@@ -8,7 +8,7 @@ type CommandInfo struct {
 	// Base64 PNG data URL or empty
 	IconDataURL string `json:"iconDataUrl,omitempty"`
 	Icon        string `json:"icon,omitempty"`
-	Category    string `json:"category"` // "app" | "settings" | "system" | "snippet" | "file"
+	Category    string `json:"category"` // "app" | "settings" | "system" | "snippet" | "file" | "container" | "container-image"
 	// App path for apps, bundle ID for settings
 	Path  string  `json:"path,omitempty"`
 	Score float64 `json:"score,omitempty"`

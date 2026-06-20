@@ -31,11 +31,13 @@ func InitApp(dataDir string) (*InitializedApp, error) {
 	calculatorService := service.NewCalculatorService(calculatorRepo)
 	scriptsRepo := repo.NewScriptsRepo(dataDir)
 	scriptsService := service.NewScriptsService(scriptsRepo)
+	containerRepo := repo.NewContainerRepo()
+	containerService := service.NewContainerService(containerRepo, settingsService)
 	hotkeyRepo := repo.NewHotkeyRepo()
 	hotkeyService := service.NewHotkeyService(hotkeyRepo)
 	dockService := dock.New()
 	manager := window.NewManager()
-	appServices := ProvideAppServices(settingsService, commandService, clipboardService, aiService, snippetService, calculatorService, scriptsService, hotkeyService, dockService, manager)
+	appServices := ProvideAppServices(settingsService, commandService, clipboardService, aiService, snippetService, calculatorService, scriptsService, containerService, hotkeyService, dockService, manager)
 	initializedApp := ProvideInitializedApp(appServices, dataDir)
 	return initializedApp, nil
 }
@@ -51,6 +53,7 @@ type AppServices struct {
 	SnippetsService  *service.SnippetService
 	CalcService      *service.CalculatorService
 	ScriptsService   *service.ScriptsService
+	ContainerService *service.ContainerService
 	HotkeyService    *service.HotkeyService
 	DockService      *dock.DockService
 	WindowManager    *window.Manager
@@ -76,6 +79,7 @@ func ProvideAppServices(
 	snippetsSvc *service.SnippetService,
 	calcSvc *service.CalculatorService,
 	scriptsSvc *service.ScriptsService,
+	containerSvc *service.ContainerService,
 	hotkeySvc *service.HotkeyService,
 	dockSvc *dock.DockService,
 	winManager *window.Manager,
@@ -88,6 +92,7 @@ func ProvideAppServices(
 		SnippetsService:  snippetsSvc,
 		CalcService:      calcSvc,
 		ScriptsService:   scriptsSvc,
+		ContainerService: containerSvc,
 		HotkeyService:    hotkeySvc,
 		DockService:      dockSvc,
 		WindowManager:    winManager,

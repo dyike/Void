@@ -12,13 +12,13 @@ import (
 
 // CommandService discovers and caches macOS commands.
 type CommandService struct {
-	mu       sync.RWMutex
-	cache    []model.CommandInfo
+	mu        sync.RWMutex
+	cache     []model.CommandInfo
 	cacheTime time.Time
-	cacheTTL time.Duration
-	frecency *FrecencyStore
-	settings *SettingsService
-	repo     *repo.CommandRepo
+	cacheTTL  time.Duration
+	frecency  *FrecencyStore
+	settings  *SettingsService
+	repo      *repo.CommandRepo
 }
 
 // NewCommandService creates a new commands service.
@@ -161,6 +161,18 @@ func systemCommands() []model.CommandInfo {
 		{
 			ID: "system-snippets", Title: "Snippets",
 			Subtitle: "Manage text snippets", Icon: "FileText", Category: "system",
+		},
+		{
+			ID: "system-apple-containers", Title: "Apple Containers",
+			Subtitle: "Manage Apple container workloads", Icon: "Container", Category: "system",
+		},
+		{
+			ID: "system-container-run", Title: "Run Container",
+			Subtitle: "Start an image with ports, env, volumes, and command preview", Icon: "Play", Category: "system",
+		},
+		{
+			ID: "system-container-pull", Title: "Pull Image",
+			Subtitle: "Pull an OCI image with Apple container", Icon: "Download", Category: "system",
 		},
 		// ── macOS system actions ───────────────────
 		{

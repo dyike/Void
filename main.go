@@ -59,6 +59,7 @@ func main() {
 			application.NewService(svc.SnippetsService),
 			application.NewService(svc.CalcService),
 			application.NewService(svc.ScriptsService),
+			application.NewService(svc.ContainerService),
 			application.NewService(svc.DockService),
 		},
 		Assets: application.AssetOptions{

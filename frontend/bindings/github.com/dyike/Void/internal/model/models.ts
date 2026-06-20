@@ -313,7 +313,7 @@ export class CommandInfo {
     "icon"?: string;
 
     /**
-     * "app" | "settings" | "system" | "snippet" | "file"
+     * "app" | "settings" | "system" | "snippet" | "file" | "container" | "container-image"
      */
     "category": string;
 
@@ -344,6 +344,108 @@ export class CommandInfo {
     static createFrom($$source: any = {}): CommandInfo {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new CommandInfo($$parsedSource as Partial<CommandInfo>);
+    }
+}
+
+/**
+ * ContainerCLIStatus describes whether Apple's container CLI is usable.
+ */
+export class ContainerCLIStatus {
+    "available": boolean;
+    "path"?: string;
+    "version"?: string;
+    "system"?: string;
+    "error"?: string;
+
+    /** Creates a new ContainerCLIStatus instance. */
+    constructor($$source: Partial<ContainerCLIStatus> = {}) {
+        if (!("available" in $$source)) {
+            this["available"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ContainerCLIStatus instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ContainerCLIStatus {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ContainerCLIStatus($$parsedSource as Partial<ContainerCLIStatus>);
+    }
+}
+
+/**
+ * ContainerCommandResult returns command output plus the exact CLI command Void built.
+ */
+export class ContainerCommandResult {
+    "command": string;
+    "output": string;
+
+    /** Creates a new ContainerCommandResult instance. */
+    constructor($$source: Partial<ContainerCommandResult> = {}) {
+        if (!("command" in $$source)) {
+            this["command"] = "";
+        }
+        if (!("output" in $$source)) {
+            this["output"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ContainerCommandResult instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ContainerCommandResult {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ContainerCommandResult($$parsedSource as Partial<ContainerCommandResult>);
+    }
+}
+
+/**
+ * ContainerInfo is a compact, UI-friendly view of an Apple container.
+ */
+export class ContainerInfo {
+    "id": string;
+    "name": string;
+    "image": string;
+    "status": string;
+    "ports": string[];
+    "createdAt"?: string;
+    "age"?: string;
+
+    /** Creates a new ContainerInfo instance. */
+    constructor($$source: Partial<ContainerInfo> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+        if (!("image" in $$source)) {
+            this["image"] = "";
+        }
+        if (!("status" in $$source)) {
+            this["status"] = "";
+        }
+        if (!("ports" in $$source)) {
+            this["ports"] = [];
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ContainerInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ContainerInfo {
+        const $$createField4_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("ports" in $$parsedSource) {
+            $$parsedSource["ports"] = $$createField4_0($$parsedSource["ports"]);
+        }
+        return new ContainerInfo($$parsedSource as Partial<ContainerInfo>);
     }
 }
 
@@ -400,6 +502,84 @@ export class ExecutionResult {
     static createFrom($$source: any = {}): ExecutionResult {
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         return new ExecutionResult($$parsedSource as Partial<ExecutionResult>);
+    }
+}
+
+/**
+ * ImageInfo is a compact, UI-friendly view of a local Apple container image.
+ */
+export class ImageInfo {
+    "id"?: string;
+    "name": string;
+    "tag"?: string;
+    "digest"?: string;
+    "size"?: string;
+    "createdAt"?: string;
+
+    /** Creates a new ImageInfo instance. */
+    constructor($$source: Partial<ImageInfo> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new ImageInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): ImageInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new ImageInfo($$parsedSource as Partial<ImageInfo>);
+    }
+}
+
+/**
+ * RunContainerOptions captures the first-pass fields Void exposes in the guided run flow.
+ */
+export class RunContainerOptions {
+    "image": string;
+    "name"?: string;
+    "ports"?: string[];
+    "envs"?: string[];
+    "volumes"?: string[];
+    "command"?: string;
+    "detach": boolean;
+    "remove": boolean;
+
+    /** Creates a new RunContainerOptions instance. */
+    constructor($$source: Partial<RunContainerOptions> = {}) {
+        if (!("image" in $$source)) {
+            this["image"] = "";
+        }
+        if (!("detach" in $$source)) {
+            this["detach"] = false;
+        }
+        if (!("remove" in $$source)) {
+            this["remove"] = false;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new RunContainerOptions instance from a string or object.
+     */
+    static createFrom($$source: any = {}): RunContainerOptions {
+        const $$createField2_0 = $$createType0;
+        const $$createField3_0 = $$createType0;
+        const $$createField4_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("ports" in $$parsedSource) {
+            $$parsedSource["ports"] = $$createField2_0($$parsedSource["ports"]);
+        }
+        if ("envs" in $$parsedSource) {
+            $$parsedSource["envs"] = $$createField3_0($$parsedSource["envs"]);
+        }
+        if ("volumes" in $$parsedSource) {
+            $$parsedSource["volumes"] = $$createField4_0($$parsedSource["volumes"]);
+        }
+        return new RunContainerOptions($$parsedSource as Partial<RunContainerOptions>);
     }
 }
 

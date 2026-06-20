@@ -13,4 +13,5 @@ var ProviderSet = wire.NewSet(
 	NewClipboardRepo,
 	NewScriptsRepo,
 	NewHotkeyRepo,
+	NewContainerRepo,
 )
