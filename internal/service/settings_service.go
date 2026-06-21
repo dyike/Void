@@ -18,6 +18,7 @@ type SettingsService struct {
 	resizeMainFunc       func(width, height int)
 	showSettingsFunc     func()
 	toggleSystemTrayFunc func(show bool)
+	hotkeyChangedFunc    func(spec string)
 }
 
 // NewSettingsService creates a new settings service.
@@ -39,6 +40,10 @@ func (s *SettingsService) SetResizeMainFunc(fn func(width, height int)) {
 
 func (s *SettingsService) SetToggleSystemTrayFunc(fn func(show bool)) {
 	s.toggleSystemTrayFunc = fn
+}
+
+func RegisterSettingsHotkeyChangedFunc(s *SettingsService, fn func(spec string)) {
+	s.hotkeyChangedFunc = fn
 }
 
 func (s *SettingsService) SetShowSettingsFunc(fn func()) {
@@ -90,7 +95,13 @@ func (s *SettingsService) GetSettings() (*model.AppSettings, error) {
 // SaveSettings persists settings and triggers side effects.
 func (s *SettingsService) SaveSettings(updated model.AppSettings) (*model.AppSettings, error) {
 	s.mu.Lock()
-	defer s.mu.Unlock()
+
+	previousShortcut := ""
+	if s.cache != nil {
+		previousShortcut = s.cache.GlobalShortcut
+	} else if current := s.repo.Load(); current != nil {
+		previousShortcut = current.GlobalShortcut
+	}
 
 	// Apply defaults for blank fields
 	if updated.GlobalShortcut == "" {
@@ -126,6 +137,14 @@ func (s *SettingsService) SaveSettings(updated model.AppSettings) (*model.AppSet
 
 	s.cache = &updated
 	cp := updated
+	hotkeyChanged := previousShortcut != "" && previousShortcut != updated.GlobalShortcut
+	hotkeyChangedFunc := s.hotkeyChangedFunc
+	s.mu.Unlock()
+
+	if hotkeyChanged && hotkeyChangedFunc != nil {
+		hotkeyChangedFunc(updated.GlobalShortcut)
+	}
+
 	return &cp, nil
 }
 

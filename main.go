@@ -5,8 +5,10 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
 	"time"
 
+	"github.com/dyike/Void/internal/service"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -49,6 +51,29 @@ func main() {
 	svc.SettingsService.SetShowSettingsFunc(svc.WindowManager.ShowSettings)
 	svc.SettingsService.SetToggleSystemTrayFunc(svc.WindowManager.ToggleSystemTray)
 
+	var hotkeyMu sync.Mutex
+	startHotkey := func(keySpec string) bool {
+		hotkeyMu.Lock()
+		defer hotkeyMu.Unlock()
+
+		svc.HotkeyService.Stop()
+		if started := svc.HotkeyService.Start(svc.WindowManager.ToggleLauncher, keySpec); started {
+			log.Printf("hotkey: active (%s)", keySpec)
+			svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
+			return true
+		}
+		return false
+	}
+
+	service.RegisterSettingsHotkeyChangedFunc(svc.SettingsService, func(spec string) {
+		go func() {
+			log.Printf("hotkey: restarting (%s)", spec)
+			if !startHotkey(spec) {
+				log.Println("hotkey: restart pending — grant Accessibility and Input Monitoring permissions in System Settings → Privacy & Security")
+			}
+		}()
+	})
+
 	app := application.New(application.Options{
 		Name:        "Void",
 		Description: "A powerful launcher for macOS",
@@ -81,13 +106,16 @@ func main() {
 	// ── Global Hotkey (Option+Space via CGEventTap) ───────────────────────
 	go func() {
 		time.Sleep(500 * time.Millisecond)
-		keySpec := svc.SettingsService.GetGlobalHotkey()
-		started := svc.HotkeyService.Start(svc.WindowManager.ToggleLauncher, keySpec)
-		if started {
-			log.Printf("hotkey: active (%s)", keySpec)
-			svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
-		} else {
-			log.Println("hotkey: CGEventTap not available — use system tray, or grant Accessibility in System Settings → Privacy & Security")
+		retryDelay := 60 * time.Second
+		for attempt := 1; ; attempt++ {
+			keySpec := svc.SettingsService.GetGlobalHotkey()
+			if startHotkey(keySpec) {
+				return
+			}
+			if attempt == 1 || attempt%5 == 0 {
+				log.Println("hotkey: waiting for Accessibility and Input Monitoring permissions in System Settings → Privacy & Security")
+			}
+			time.Sleep(retryDelay)
 		}
 	}()
 
