@@ -509,31 +509,6 @@ const ContainersView: React.FC<Props> = ({ initialContainerId, initialTab = 'sum
             <Play size={14} /> Start Service
           </Button>
         ) : null}
-        {mode === 'images' && (
-          <Button variant="secondary" size="sm" className="h-8 gap-1.5" onClick={pruneImages} disabled={busy || !ready}>
-            <Trash2 size={14} /> Prune Unused
-          </Button>
-        )}
-        {mode === 'networks' && (
-          <Button variant="secondary" size="sm" className="h-8 gap-1.5" disabled={!ready} onClick={() => {
-            setNetworkForm(emptyNetworkForm)
-            setShowNetworkCreate(true)
-          }}>
-            <Plus size={14} /> Create Network
-          </Button>
-        )}
-        <Button variant="secondary" size="sm" className="h-8 gap-1.5" onClick={() => {
-          setMode('images')
-          setShowPullPanel(true)
-        }} disabled={!ready}>
-          <Download size={14} /> Pull Image
-        </Button>
-        <Button size="sm" className="h-8 gap-1.5 bg-indigo-500/30 text-indigo-700 hover:bg-indigo-500/40 dark:text-indigo-100" onClick={() => {
-          setRunForm(emptyRunForm)
-          setMode('run')
-        }} disabled={!ready}>
-          <Play size={14} /> Run Container
-        </Button>
       </div>
 
       {(error || status?.error || lastCommand) && (
@@ -615,15 +590,28 @@ const ContainersView: React.FC<Props> = ({ initialContainerId, initialTab = 'sum
                     <div className="text-[14px] font-semibold">Images</div>
                     <div className="text-[11px] text-muted-foreground">Pull, run, inspect, and remove local images.</div>
                   </div>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    className="h-8 shrink-0 gap-1.5"
-                    onClick={() => setShowPullPanel(value => !value)}
-                  >
-                    <Download size={14} />
-                    Pull Image
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 gap-1.5 text-muted-foreground hover:text-foreground"
+                      onClick={pruneImages}
+                      disabled={busy || !ready}
+                    >
+                      <Trash2 size={14} />
+                      Prune Unused
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="h-8 gap-1.5"
+                      onClick={() => setShowPullPanel(value => !value)}
+                      disabled={!ready}
+                    >
+                      <Download size={14} />
+                      Pull Image
+                    </Button>
+                  </div>
                 </div>
                 {showPullPanel && (
                   <div className="mt-3 rounded-md border border-border bg-secondary/20 p-3">
@@ -678,7 +666,26 @@ const ContainersView: React.FC<Props> = ({ initialContainerId, initialTab = 'sum
           )}
 
           {mode === 'networks' && (
-            <div className="flex h-full flex-col">
+            <div className="flex h-full min-h-0 flex-col overflow-hidden">
+              <div className="flex items-center justify-between gap-3 border-b border-launcher-border p-3">
+                <div className="min-w-0">
+                  <div className="text-[14px] font-semibold">Networks</div>
+                  <div className="text-[11px] text-muted-foreground">Inspect, create, and remove container networks.</div>
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="h-8 shrink-0 gap-1.5"
+                  disabled={!ready}
+                  onClick={() => {
+                    setNetworkForm(emptyNetworkForm)
+                    setShowNetworkCreate(true)
+                  }}
+                >
+                  <Plus size={14} />
+                  Create Network
+                </Button>
+              </div>
               <div className="grid grid-cols-[minmax(120px,0.9fr)_76px_minmax(130px,1fr)_minmax(120px,0.9fr)] gap-3 border-b border-launcher-border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/70">
                 <span>Name</span>
                 <span>Mode</span>
