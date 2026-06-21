@@ -1,10 +1,29 @@
 package repo
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/dyike/Void/internal/model"
 )
+
+func TestResolveExecutableChecksExtraDirs(t *testing.T) {
+	dir := t.TempDir()
+	const name = "void-container-test-bin"
+	path := filepath.Join(dir, name)
+	if err := os.WriteFile(path, []byte("#!/bin/sh\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	resolved, err := resolveExecutable(name, []string{dir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resolved != path {
+		t.Fatalf("expected %q, got %q", path, resolved)
+	}
+}
 
 func TestParseContainerRowsAppleContainerJSON(t *testing.T) {
 	rows, err := decodeObjectList([]byte(`[

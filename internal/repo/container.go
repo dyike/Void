@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"sort"
@@ -23,6 +24,42 @@ type ContainerRepo struct {
 
 func NewContainerRepo() *ContainerRepo {
 	return &ContainerRepo{binary: "container"}
+}
+
+func (r *ContainerRepo) executable() (string, error) {
+	return resolveExecutable(r.binary, []string{
+		"/usr/local/bin",
+		"/opt/homebrew/bin",
+		"/usr/bin",
+		"/bin",
+	})
+}
+
+func resolveExecutable(name string, extraDirs []string) (string, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return "", errors.New("executable name is empty")
+	}
+	if strings.ContainsRune(name, os.PathSeparator) {
+		if info, err := os.Stat(name); err == nil && isExecutableFile(info) {
+			return name, nil
+		}
+		return "", fmt.Errorf("%s was not found", name)
+	}
+	if path, err := exec.LookPath(name); err == nil && path != "" {
+		return path, nil
+	}
+	for _, dir := range extraDirs {
+		path := dir + string(os.PathSeparator) + name
+		if info, err := os.Stat(path); err == nil && isExecutableFile(info) {
+			return path, nil
+		}
+	}
+	return "", fmt.Errorf("%s was not found in PATH or standard install locations", name)
+}
+
+func isExecutableFile(info os.FileInfo) bool {
+	return !info.IsDir() && info.Mode()&0111 != 0
 }
 
 func containerPlatformSupport() (bool, string, string) {
@@ -63,13 +100,13 @@ func (r *ContainerRepo) Status() model.ContainerCLIStatus {
 		}
 	}
 
-	path, err := exec.LookPath(r.binary)
+	path, err := r.executable()
 	if err != nil {
 		return model.ContainerCLIStatus{
 			Available: false,
 			Supported: true,
 			OSVersion: osVersion,
-			Error:     "`container` CLI was not found in PATH. Install Apple Container first.",
+			Error:     "`container` CLI was not found in PATH, /usr/local/bin, or /opt/homebrew/bin. Install Apple Container first.",
 		}
 	}
 
@@ -210,14 +247,18 @@ func (r *ContainerRepo) PruneImages(all bool) (model.ContainerCommandResult, err
 }
 
 func (r *ContainerRepo) InstallContainer(terminalApp string) error {
-	if brew, err := exec.LookPath("brew"); err == nil && brew != "" {
+	if brew, err := resolveExecutable("brew", []string{"/opt/homebrew/bin", "/usr/local/bin"}); err == nil && brew != "" {
 		return openTerminalCommand(terminalApp, "brew install container")
 	}
 	return exec.Command("open", "https://github.com/apple/container/releases/latest").Run()
 }
 
 func (r *ContainerRepo) StartSystem(terminalApp string) error {
-	return openTerminalCommand(terminalApp, "container system start")
+	binary, err := r.executable()
+	if err != nil {
+		binary = r.binary
+	}
+	return openTerminalCommand(terminalApp, fmt.Sprintf("%s system start", shellQuote(binary)))
 }
 
 func (r *ContainerRepo) RunContainer(opts model.RunContainerOptions) (model.ContainerCommandResult, error) {
@@ -344,7 +385,11 @@ func (r *ContainerRepo) OpenShell(id string, terminalApp string) error {
 	if id == "" {
 		return errors.New("container id is required")
 	}
-	return openTerminalCommand(terminalApp, fmt.Sprintf("container exec -it %s /bin/sh", shellQuote(id)))
+	binary, err := r.executable()
+	if err != nil {
+		binary = r.binary
+	}
+	return openTerminalCommand(terminalApp, fmt.Sprintf("%s exec -it %s /bin/sh", shellQuote(binary), shellQuote(id)))
 }
 
 func (r *ContainerRepo) containerCommand(timeout time.Duration, action string, id string) (model.ContainerCommandResult, error) {
@@ -361,12 +406,16 @@ func (r *ContainerRepo) run(timeout time.Duration, args ...string) (string, erro
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, r.binary, args...)
+	binary, err := r.executable()
+	if err != nil {
+		return "", err
+	}
+	cmd := exec.CommandContext(ctx, binary, args...)
 	var out bytes.Buffer
 	cmd.Stdout = &out
 	cmd.Stderr = &out
 
-	err := cmd.Run()
+	err = cmd.Run()
 	text := out.String()
 	if ctx.Err() == context.DeadlineExceeded {
 		return text, fmt.Errorf("container command timed out: %s", shellCommand(r.binary, args))
