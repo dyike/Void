@@ -163,6 +163,10 @@ func systemCommands() []model.CommandInfo {
 			Subtitle: "Manage text snippets", Icon: "FileText", Category: "system",
 		},
 		{
+			ID: "system-scripts", Title: "Script Commands",
+			Subtitle: "Run Raycast-compatible script commands", Icon: "SquareTerminal", Category: "system",
+		},
+		{
 			ID: "system-apple-containers", Title: "Apple Containers",
 			Subtitle: "Manage Apple container workloads", Icon: "Container", Category: "system",
 		},
@@ -194,6 +198,10 @@ func systemCommands() []model.CommandInfo {
 		{
 			ID: "system-open-terminal", Title: "Open Terminal",
 			Subtitle: "Open Terminal", Icon: "Terminal", Category: "system",
+		},
+		{
+			ID: "system-show-desktop", Title: "Show Desktop",
+			Subtitle: "Reveal the desktop", Icon: "Monitor", Category: "system",
 		},
 		// ── Window management ─────────────────────
 		{
