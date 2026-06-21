@@ -1,6 +1,9 @@
 package service
 
 import (
+	"os/exec"
+	"runtime"
+	"strconv"
 	"strings"
 
 	"github.com/dyike/Void/internal/model"
@@ -21,6 +24,15 @@ func (s *ContainerService) GetStatus() model.ContainerCLIStatus {
 	return s.repo.Status()
 }
 
+func (s *ContainerService) GetHostResources() model.HostResourceInfo {
+	memoryBytes := hostMemoryBytes()
+	return model.HostResourceInfo{
+		CPUCores:    runtime.NumCPU(),
+		MemoryBytes: memoryBytes,
+		MemoryMiB:   int(memoryBytes / 1024 / 1024),
+	}
+}
+
 func (s *ContainerService) ListContainers() ([]model.ContainerInfo, error) {
 	if !s.isReady() {
 		return []model.ContainerInfo{}, nil
@@ -35,12 +47,31 @@ func (s *ContainerService) ListImages() ([]model.ImageInfo, error) {
 	return s.repo.ListImages()
 }
 
+func (s *ContainerService) ListNetworks() ([]model.NetworkInfo, error) {
+	if !s.isReady() {
+		return []model.NetworkInfo{}, nil
+	}
+	return s.repo.ListNetworks()
+}
+
+func (s *ContainerService) CreateNetwork(opts model.CreateNetworkOptions) (model.ContainerCommandResult, error) {
+	return s.repo.CreateNetwork(opts)
+}
+
+func (s *ContainerService) RemoveNetwork(name string) (model.ContainerCommandResult, error) {
+	return s.repo.RemoveNetwork(name)
+}
+
 func (s *ContainerService) PullImage(reference string) (model.ContainerCommandResult, error) {
 	return s.repo.PullImage(reference)
 }
 
 func (s *ContainerService) RemoveImage(reference string) (model.ContainerCommandResult, error) {
 	return s.repo.RemoveImage(reference)
+}
+
+func (s *ContainerService) PruneImages(all bool) (model.ContainerCommandResult, error) {
+	return s.repo.PruneImages(all)
 }
 
 func (s *ContainerService) InstallContainer() error {
@@ -52,9 +83,6 @@ func (s *ContainerService) StartSystem() error {
 }
 
 func (s *ContainerService) RunContainer(opts model.RunContainerOptions) (model.ContainerCommandResult, error) {
-	if !opts.Detach {
-		opts.Detach = true
-	}
 	return s.repo.RunContainer(opts)
 }
 
@@ -90,15 +118,59 @@ func (s *ContainerService) OpenShell(id string) error {
 }
 
 func (s *ContainerService) BuildRunCommand(opts model.RunContainerOptions) string {
+	opts = normalizeRunOptionsLocal(opts)
 	args := []string{"container", "run"}
 	if opts.Detach {
 		args = append(args, "--detach")
 	}
-	if opts.Remove {
+	if opts.Remove && !opts.Detach {
 		args = append(args, "--rm")
 	}
 	if strings.TrimSpace(opts.Name) != "" {
 		args = append(args, "--name", shellQuoteLocal(opts.Name))
+	}
+	if strings.TrimSpace(opts.Network) != "" {
+		args = append(args, "--network", shellQuoteLocal(opts.Network))
+	}
+	for _, dns := range opts.DNS {
+		if strings.TrimSpace(dns) != "" {
+			args = append(args, "--dns", shellQuoteLocal(dns))
+		}
+	}
+	if opts.NoDNS {
+		args = append(args, "--no-dns")
+	}
+	if strings.TrimSpace(opts.Platform) != "" {
+		args = append(args, "--platform", shellQuoteLocal(opts.Platform))
+	}
+	if strings.TrimSpace(opts.CPUs) != "" {
+		args = append(args, "--cpus", shellQuoteLocal(opts.CPUs))
+	}
+	if strings.TrimSpace(opts.Memory) != "" {
+		args = append(args, "--memory", shellQuoteLocal(opts.Memory))
+	}
+	if strings.TrimSpace(opts.Workdir) != "" {
+		args = append(args, "--workdir", shellQuoteLocal(opts.Workdir))
+	}
+	if strings.TrimSpace(opts.User) != "" {
+		args = append(args, "--user", shellQuoteLocal(opts.User))
+	}
+	if strings.TrimSpace(opts.Entrypoint) != "" {
+		args = append(args, "--entrypoint", shellQuoteLocal(opts.Entrypoint))
+	}
+	for _, label := range opts.Labels {
+		if strings.TrimSpace(label) != "" {
+			args = append(args, "--label", shellQuoteLocal(label))
+		}
+	}
+	if opts.Init {
+		args = append(args, "--init")
+	}
+	if opts.ReadOnly {
+		args = append(args, "--read-only")
+	}
+	if opts.SSH {
+		args = append(args, "--ssh")
 	}
 	for _, port := range opts.Ports {
 		if strings.TrimSpace(port) != "" {
@@ -119,9 +191,79 @@ func (s *ContainerService) BuildRunCommand(opts model.RunContainerOptions) strin
 		args = append(args, shellQuoteLocal(opts.Image))
 	}
 	if strings.TrimSpace(opts.Command) != "" {
-		args = append(args, opts.Command)
+		args = append(args, "/bin/sh", "-lc", shellQuoteLocal(opts.Command))
 	}
 	return strings.Join(args, " ")
+}
+
+func normalizeRunOptionsLocal(opts model.RunContainerOptions) model.RunContainerOptions {
+	if opts.Detach {
+		opts.Remove = false
+	}
+	opts.CPUs = normalizeRunResourceLocal(opts.CPUs)
+	opts.Memory = normalizeRunResourceLocal(opts.Memory)
+	if strings.TrimSpace(opts.Command) == "" && opts.Detach {
+		opts.Command = defaultDetachedCommandLocal(opts.Image)
+	}
+	return opts
+}
+
+func normalizeRunResourceLocal(value string) string {
+	trimmed := strings.TrimSpace(value)
+	if trimmed == "" || isZeroResourceValueLocal(trimmed) {
+		return ""
+	}
+	return trimmed
+}
+
+func isZeroResourceValueLocal(value string) bool {
+	cleaned := strings.ToLower(strings.ReplaceAll(strings.TrimSpace(value), " ", ""))
+	for _, suffix := range []string{"bytes", "byte", "mib", "gib", "tib", "pib", "kib", "mb", "gb", "tb", "pb", "kb", "mi", "gi", "ti", "pi", "ki", "b", "m", "g", "t", "p", "k"} {
+		cleaned = strings.TrimSuffix(cleaned, suffix)
+	}
+	number, err := strconv.ParseFloat(cleaned, 64)
+	return err == nil && number == 0
+}
+
+func hostMemoryBytes() uint64 {
+	out, err := exec.Command("sysctl", "-n", "hw.memsize").Output()
+	if err != nil {
+		return 0
+	}
+	value, err := strconv.ParseUint(strings.TrimSpace(string(out)), 10, 64)
+	if err != nil {
+		return 0
+	}
+	return value
+}
+
+func defaultDetachedCommandLocal(image string) string {
+	name := normalizedImageNameLocal(image)
+	switch name {
+	case "alpine", "ubuntu", "debian", "busybox", "fedora", "centos", "rockylinux", "archlinux", "oraclelinux":
+		return "sleep infinity"
+	default:
+		return ""
+	}
+}
+
+func normalizedImageNameLocal(image string) string {
+	image = strings.TrimSpace(image)
+	if image == "" {
+		return ""
+	}
+	if at := strings.Index(image, "@"); at >= 0 {
+		image = image[:at]
+	}
+	lastSlash := strings.LastIndex(image, "/")
+	lastColon := strings.LastIndex(image, ":")
+	if lastColon > lastSlash {
+		image = image[:lastColon]
+	}
+	if lastSlash >= 0 {
+		image = image[lastSlash+1:]
+	}
+	return strings.ToLower(image)
 }
 
 func shellQuoteLocal(value string) string {
@@ -137,7 +279,7 @@ func shellQuoteLocal(value string) string {
 
 func (s *ContainerService) isReady() bool {
 	status := s.repo.Status()
-	return status.Available && status.Error == ""
+	return status.Supported && status.Available && status.Error == ""
 }
 
 func (s *ContainerService) terminalApp() string {

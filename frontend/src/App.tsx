@@ -64,6 +64,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   file: 'Files',
 }
 
+const LAUNCHER_WINDOW_SIZE = { width: 760, height: 560 }
+const CONTAINERS_WINDOW_SIZE = { width: 980, height: 660 }
+
 function useDebounce<T>(value: T, ms: number): T {
   const [d, setD] = useState(value)
   useEffect(() => {
@@ -85,6 +88,23 @@ const SEARCH_ENGINES = [
   { id: 'bing', title: 'Bing', icon: 'Search', url: 'https://www.bing.com/search?q=%s', home: 'https://www.bing.com' },
   { id: 'github', title: 'GitHub', icon: 'Github', url: 'https://github.com/search?q=%s', home: 'https://github.com' },
   { id: 'youtube', title: 'YouTube', icon: 'Youtube', url: 'https://www.youtube.com/results?search_query=%s', home: 'https://www.youtube.com' }
+]
+
+const CONTAINER_SHORTCUTS: CommandInfo[] = [
+  {
+    id: 'system-container-run',
+    title: 'Run Container',
+    subtitle: 'Start an image with ports, env, volumes, and command preview',
+    icon: 'Play',
+    category: 'system',
+  },
+  {
+    id: 'system-container-pull',
+    title: 'Pull Image',
+    subtitle: 'Pull an OCI image with Apple container',
+    icon: 'Download',
+    category: 'system',
+  },
 ]
 
 // ─── App ──────────────────────────────────────────────────────────────────
@@ -221,8 +241,11 @@ const App: React.FC = () => {
     const containerMatches = q
       ? containerResults.filter(c => `${c.title} ${c.subtitle || ''}`.toLowerCase().includes(q))
       : []
+    const containerShortcutMatches = q
+      ? CONTAINER_SHORTCUTS.filter(c => `${c.title} ${c.subtitle || ''} apple container image pull run`.toLowerCase().includes(q))
+      : []
 
-    return [...base, ...containerMatches, ...snippetResults, ...goodFiles]
+    return [...base, ...containerShortcutMatches, ...containerMatches, ...snippetResults, ...goodFiles]
   }, [commands, fileResults, query, activeSearchEngine, snippetResults, containerResults])
 
   const grouped = useMemo(() => {
@@ -244,6 +267,11 @@ const App: React.FC = () => {
   }, [selectedIndex])
   useEffect(() => {
     if (view === 'launcher') setTimeout(() => inputRef.current?.focus(), 50)
+  }, [view])
+
+  useEffect(() => {
+    const size = view === 'containers' ? CONTAINERS_WINDOW_SIZE : LAUNCHER_WINDOW_SIZE
+    SettingsService.ResizeMainWindow(size.width, size.height).catch(() => { })
   }, [view])
 
   // Re-focus search input when window becomes visible (e.g., activated via hotkey)

@@ -15,6 +15,7 @@ type SettingsService struct {
 	repo                 *repo.SettingsRepo
 	openSettingsFunc     func()
 	resizeSettingsFunc   func(width, height int)
+	resizeMainFunc       func(width, height int)
 	showSettingsFunc     func()
 	toggleSystemTrayFunc func(show bool)
 }
@@ -30,6 +31,10 @@ func (s *SettingsService) SetOpenSettingsFunc(fn func()) {
 
 func (s *SettingsService) SetResizeSettingsFunc(fn func(width, height int)) {
 	s.resizeSettingsFunc = fn
+}
+
+func (s *SettingsService) SetResizeMainFunc(fn func(width, height int)) {
+	s.resizeMainFunc = fn
 }
 
 func (s *SettingsService) SetToggleSystemTrayFunc(fn func(show bool)) {
@@ -55,6 +60,12 @@ func (s *SettingsService) OpenSettingsWindow() {
 func (s *SettingsService) ResizeSettingsWindow(width, height int) {
 	if s.resizeSettingsFunc != nil {
 		s.resizeSettingsFunc(width, height)
+	}
+}
+
+func (s *SettingsService) ResizeMainWindow(width, height int) {
+	if s.resizeMainFunc != nil {
+		s.resizeMainFunc(width, height)
 	}
 }
 

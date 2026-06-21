@@ -45,6 +45,7 @@ func main() {
 	// Expose Settings callbacks to the Settings service
 	svc.SettingsService.SetOpenSettingsFunc(svc.WindowManager.OpenSettings)
 	svc.SettingsService.SetResizeSettingsFunc(svc.WindowManager.ResizeSettings)
+	svc.SettingsService.SetResizeMainFunc(svc.WindowManager.ResizeMain)
 	svc.SettingsService.SetShowSettingsFunc(svc.WindowManager.ShowSettings)
 	svc.SettingsService.SetToggleSystemTrayFunc(svc.WindowManager.ToggleSystemTray)
 

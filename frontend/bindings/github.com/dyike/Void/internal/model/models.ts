@@ -352,15 +352,20 @@ export class CommandInfo {
  */
 export class ContainerCLIStatus {
     "available": boolean;
+    "supported": boolean;
     "path"?: string;
     "version"?: string;
     "system"?: string;
+    "osVersion"?: string;
     "error"?: string;
 
     /** Creates a new ContainerCLIStatus instance. */
     constructor($$source: Partial<ContainerCLIStatus> = {}) {
         if (!("available" in $$source)) {
             this["available"] = false;
+        }
+        if (!("supported" in $$source)) {
+            this["supported"] = false;
         }
 
         Object.assign(this, $$source);
@@ -411,6 +416,11 @@ export class ContainerInfo {
     "name": string;
     "image": string;
     "status": string;
+    "ip"?: string;
+    "cpus"?: string;
+    "memory"?: string;
+    "os"?: string;
+    "arch"?: string;
     "ports": string[];
     "createdAt"?: string;
     "age"?: string;
@@ -440,12 +450,50 @@ export class ContainerInfo {
      * Creates a new ContainerInfo instance from a string or object.
      */
     static createFrom($$source: any = {}): ContainerInfo {
-        const $$createField4_0 = $$createType0;
+        const $$createField9_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("ports" in $$parsedSource) {
-            $$parsedSource["ports"] = $$createField4_0($$parsedSource["ports"]);
+            $$parsedSource["ports"] = $$createField9_0($$parsedSource["ports"]);
         }
         return new ContainerInfo($$parsedSource as Partial<ContainerInfo>);
+    }
+}
+
+/**
+ * CreateNetworkOptions captures the fields supported by `container network create`.
+ */
+export class CreateNetworkOptions {
+    "name": string;
+    "internal"?: boolean;
+    "labels"?: string[];
+    "options"?: string[];
+    "plugin"?: string;
+    "subnet"?: string;
+    "subnetV6"?: string;
+
+    /** Creates a new CreateNetworkOptions instance. */
+    constructor($$source: Partial<CreateNetworkOptions> = {}) {
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new CreateNetworkOptions instance from a string or object.
+     */
+    static createFrom($$source: any = {}): CreateNetworkOptions {
+        const $$createField2_0 = $$createType0;
+        const $$createField3_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("labels" in $$parsedSource) {
+            $$parsedSource["labels"] = $$createField2_0($$parsedSource["labels"]);
+        }
+        if ("options" in $$parsedSource) {
+            $$parsedSource["options"] = $$createField3_0($$parsedSource["options"]);
+        }
+        return new CreateNetworkOptions($$parsedSource as Partial<CreateNetworkOptions>);
     }
 }
 
@@ -506,6 +554,38 @@ export class ExecutionResult {
 }
 
 /**
+ * HostResourceInfo describes local machine resources available for run presets.
+ */
+export class HostResourceInfo {
+    "cpuCores": number;
+    "memoryBytes": number;
+    "memoryMiB": number;
+
+    /** Creates a new HostResourceInfo instance. */
+    constructor($$source: Partial<HostResourceInfo> = {}) {
+        if (!("cpuCores" in $$source)) {
+            this["cpuCores"] = 0;
+        }
+        if (!("memoryBytes" in $$source)) {
+            this["memoryBytes"] = 0;
+        }
+        if (!("memoryMiB" in $$source)) {
+            this["memoryMiB"] = 0;
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new HostResourceInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): HostResourceInfo {
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        return new HostResourceInfo($$parsedSource as Partial<HostResourceInfo>);
+    }
+}
+
+/**
  * ImageInfo is a compact, UI-friendly view of a local Apple container image.
  */
 export class ImageInfo {
@@ -535,6 +615,50 @@ export class ImageInfo {
 }
 
 /**
+ * NetworkInfo is a compact, UI-friendly view of an Apple container network.
+ */
+export class NetworkInfo {
+    "id": string;
+    "name": string;
+    "mode"?: string;
+    "plugin"?: string;
+    "ipv4Subnet"?: string;
+    "ipv4Gateway"?: string;
+    "ipv6Subnet"?: string;
+    "labels"?: string[];
+    "options"?: string[];
+    "createdAt"?: string;
+
+    /** Creates a new NetworkInfo instance. */
+    constructor($$source: Partial<NetworkInfo> = {}) {
+        if (!("id" in $$source)) {
+            this["id"] = "";
+        }
+        if (!("name" in $$source)) {
+            this["name"] = "";
+        }
+
+        Object.assign(this, $$source);
+    }
+
+    /**
+     * Creates a new NetworkInfo instance from a string or object.
+     */
+    static createFrom($$source: any = {}): NetworkInfo {
+        const $$createField7_0 = $$createType0;
+        const $$createField8_0 = $$createType0;
+        let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
+        if ("labels" in $$parsedSource) {
+            $$parsedSource["labels"] = $$createField7_0($$parsedSource["labels"]);
+        }
+        if ("options" in $$parsedSource) {
+            $$parsedSource["options"] = $$createField8_0($$parsedSource["options"]);
+        }
+        return new NetworkInfo($$parsedSource as Partial<NetworkInfo>);
+    }
+}
+
+/**
  * RunContainerOptions captures the first-pass fields Void exposes in the guided run flow.
  */
 export class RunContainerOptions {
@@ -546,6 +670,19 @@ export class RunContainerOptions {
     "command"?: string;
     "detach": boolean;
     "remove": boolean;
+    "network"?: string;
+    "dns"?: string[];
+    "noDns"?: boolean;
+    "platform"?: string;
+    "cpus"?: string;
+    "memory"?: string;
+    "workdir"?: string;
+    "user"?: string;
+    "entrypoint"?: string;
+    "labels"?: string[];
+    "init"?: boolean;
+    "readOnly"?: boolean;
+    "ssh"?: boolean;
 
     /** Creates a new RunContainerOptions instance. */
     constructor($$source: Partial<RunContainerOptions> = {}) {
@@ -569,6 +706,8 @@ export class RunContainerOptions {
         const $$createField2_0 = $$createType0;
         const $$createField3_0 = $$createType0;
         const $$createField4_0 = $$createType0;
+        const $$createField9_0 = $$createType0;
+        const $$createField17_0 = $$createType0;
         let $$parsedSource = typeof $$source === 'string' ? JSON.parse($$source) : $$source;
         if ("ports" in $$parsedSource) {
             $$parsedSource["ports"] = $$createField2_0($$parsedSource["ports"]);
@@ -578,6 +717,12 @@ export class RunContainerOptions {
         }
         if ("volumes" in $$parsedSource) {
             $$parsedSource["volumes"] = $$createField4_0($$parsedSource["volumes"]);
+        }
+        if ("dns" in $$parsedSource) {
+            $$parsedSource["dns"] = $$createField9_0($$parsedSource["dns"]);
+        }
+        if ("labels" in $$parsedSource) {
+            $$parsedSource["labels"] = $$createField17_0($$parsedSource["labels"]);
         }
         return new RunContainerOptions($$parsedSource as Partial<RunContainerOptions>);
     }

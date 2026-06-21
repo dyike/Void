@@ -70,10 +70,10 @@ func (m *Manager) CreateMainWindow(url string) *application.WebviewWindow {
 	themeMode := m.currentThemeMode()
 	m.mainWindow = m.app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:            "Void",
-		Width:            680,
-		Height:           480,
-		MinWidth:         500,
-		MinHeight:        300,
+		Width:            760,
+		Height:           560,
+		MinWidth:         560,
+		MinHeight:        360,
 		Frameless:        true,
 		AlwaysOnTop:      true,
 		Hidden:           false,
@@ -182,6 +182,14 @@ func (m *Manager) ResizeSettings(width, height int) {
 		cx, cy := m.settingsWindow.Position()
 		m.settingsWindow.SetSize(width, height)
 		m.settingsWindow.SetPosition(cx, cy)
+	}
+}
+
+// ResizeMain safely adjusts the main launcher window size.
+func (m *Manager) ResizeMain(width, height int) {
+	if m.mainWindow != nil {
+		m.mainWindow.SetSize(width, height)
+		m.mainWindow.Center()
 	}
 }
 

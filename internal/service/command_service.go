@@ -166,14 +166,6 @@ func systemCommands() []model.CommandInfo {
 			ID: "system-apple-containers", Title: "Apple Containers",
 			Subtitle: "Manage Apple container workloads", Icon: "Container", Category: "system",
 		},
-		{
-			ID: "system-container-run", Title: "Run Container",
-			Subtitle: "Start an image with ports, env, volumes, and command preview", Icon: "Play", Category: "system",
-		},
-		{
-			ID: "system-container-pull", Title: "Pull Image",
-			Subtitle: "Pull an OCI image with Apple container", Icon: "Download", Category: "system",
-		},
 		// ── macOS system actions ───────────────────
 		{
 			ID: "system-lock-screen", Title: "Lock Screen",

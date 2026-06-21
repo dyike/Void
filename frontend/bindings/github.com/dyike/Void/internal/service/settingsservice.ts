@@ -54,6 +54,10 @@ export function ResetCache(): $CancellablePromise<void> {
     return $Call.ByID(233911112);
 }
 
+export function ResizeMainWindow(width: number, height: number): $CancellablePromise<void> {
+    return $Call.ByID(2679266414, width, height);
+}
+
 export function ResizeSettingsWindow(width: number, height: number): $CancellablePromise<void> {
     return $Call.ByID(3960036194, width, height);
 }
@@ -76,6 +80,10 @@ export function SetGlobalHotkey(spec: string): $CancellablePromise<void> {
 
 export function SetOpenSettingsFunc(fn: any): $CancellablePromise<void> {
     return $Call.ByID(596048126, fn);
+}
+
+export function SetResizeMainFunc(fn: any): $CancellablePromise<void> {
+    return $Call.ByID(788236782, fn);
 }
 
 export function SetResizeSettingsFunc(fn: any): $CancellablePromise<void> {

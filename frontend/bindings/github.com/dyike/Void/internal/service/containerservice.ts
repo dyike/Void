@@ -18,13 +18,25 @@ export function BuildRunCommand(opts: model$0.RunContainerOptions): $Cancellable
     return $Call.ByID(1040315767, opts);
 }
 
+export function CreateNetwork(opts: model$0.CreateNetworkOptions): $CancellablePromise<model$0.ContainerCommandResult> {
+    return $Call.ByID(702960187, opts).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
+export function GetHostResources(): $CancellablePromise<model$0.HostResourceInfo> {
+    return $Call.ByID(696132688).then(($result: any) => {
+        return $$createType1($result);
+    });
+}
+
 export function GetLogs(id: string, tail: number): $CancellablePromise<string> {
     return $Call.ByID(2119156910, id, tail);
 }
 
 export function GetStatus(): $CancellablePromise<model$0.ContainerCLIStatus> {
     return $Call.ByID(3068187863).then(($result: any) => {
-        return $$createType0($result);
+        return $$createType2($result);
     });
 }
 
@@ -38,13 +50,19 @@ export function InstallContainer(): $CancellablePromise<void> {
 
 export function ListContainers(): $CancellablePromise<model$0.ContainerInfo[]> {
     return $Call.ByID(2625203407).then(($result: any) => {
-        return $$createType2($result);
+        return $$createType4($result);
     });
 }
 
 export function ListImages(): $CancellablePromise<model$0.ImageInfo[]> {
     return $Call.ByID(3633102361).then(($result: any) => {
-        return $$createType4($result);
+        return $$createType6($result);
+    });
+}
+
+export function ListNetworks(): $CancellablePromise<model$0.NetworkInfo[]> {
+    return $Call.ByID(334587520).then(($result: any) => {
+        return $$createType8($result);
     });
 }
 
@@ -52,39 +70,51 @@ export function OpenShell(id: string): $CancellablePromise<void> {
     return $Call.ByID(3180829315, id);
 }
 
+export function PruneImages(all: boolean): $CancellablePromise<model$0.ContainerCommandResult> {
+    return $Call.ByID(77572327, all).then(($result: any) => {
+        return $$createType0($result);
+    });
+}
+
 export function PullImage(reference: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(2775522409, reference).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
 export function RemoveContainer(id: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(1498186442, id).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
 export function RemoveImage(reference: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(754368852, reference).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
+    });
+}
+
+export function RemoveNetwork(name: string): $CancellablePromise<model$0.ContainerCommandResult> {
+    return $Call.ByID(1596017671, name).then(($result: any) => {
+        return $$createType0($result);
     });
 }
 
 export function RestartContainer(id: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(4043178457, id).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
 export function RunContainer(opts: model$0.RunContainerOptions): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(1995356331, opts).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
 export function StartContainer(id: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(1681435636, id).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
@@ -94,14 +124,17 @@ export function StartSystem(): $CancellablePromise<void> {
 
 export function StopContainer(id: string): $CancellablePromise<model$0.ContainerCommandResult> {
     return $Call.ByID(301602054, id).then(($result: any) => {
-        return $$createType5($result);
+        return $$createType0($result);
     });
 }
 
 // Private type creation functions
-const $$createType0 = model$0.ContainerCLIStatus.createFrom;
-const $$createType1 = model$0.ContainerInfo.createFrom;
-const $$createType2 = $Create.Array($$createType1);
-const $$createType3 = model$0.ImageInfo.createFrom;
+const $$createType0 = model$0.ContainerCommandResult.createFrom;
+const $$createType1 = model$0.HostResourceInfo.createFrom;
+const $$createType2 = model$0.ContainerCLIStatus.createFrom;
+const $$createType3 = model$0.ContainerInfo.createFrom;
 const $$createType4 = $Create.Array($$createType3);
-const $$createType5 = model$0.ContainerCommandResult.createFrom;
+const $$createType5 = model$0.ImageInfo.createFrom;
+const $$createType6 = $Create.Array($$createType5);
+const $$createType7 = model$0.NetworkInfo.createFrom;
+const $$createType8 = $Create.Array($$createType7);
