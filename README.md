@@ -46,7 +46,7 @@ Common entry points:
 
 - macOS. Native launcher, clipboard, hotkey, snippet expansion, and window-management features are macOS-specific.
 - Go `1.26` or newer, matching `go.mod`.
-- Node.js `20` or newer and npm.
+- Node.js `20.19` or newer and npm. Node `22.12` or newer is also supported.
 - Wails v3 CLI:
 
   ```bash
