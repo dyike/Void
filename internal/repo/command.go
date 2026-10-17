@@ -8,13 +8,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"sort"
 	"strings"
 	"time"
 
 	"github.com/dyike/Void/internal/model"
 	"github.com/dyike/Void/internal/repo/filesearch"
-	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type CommandRepo struct {
@@ -41,45 +39,9 @@ func (r *CommandRepo) DiscoverAppsSpotlight() []model.CommandInfo {
 		return nil
 	}
 
-	seen := map[string]bool{}
-	var results []model.CommandInfo
-
-	lines := strings.Split(strings.TrimSpace(string(out)), "\n")
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || seen[line] {
-			continue
-		}
-
-		// Skip hidden apps and OS internals
-		if strings.Contains(line, "/Library/Apple/") ||
-			strings.Contains(line, "Xcode.app/Contents/") ||
-			strings.Contains(line, ".bundle") {
-			continue
-		}
-
-		seen[line] = true
-		name := strings.TrimSuffix(filepath.Base(line), ".app")
-		id := "app-" + slugify(name)
-
-		iconDataURL := r.iconForApp(line)
-
-		results = append(results, model.CommandInfo{
-			ID:          id,
-			Title:       name,
-			Subtitle:    filepath.Dir(line),
-			IconDataURL: iconDataURL,
-			Category:    "app",
-			Path:        line,
-		})
-	}
-
-	// Sort by name
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Title < results[j].Title
-	})
-
-	return results
+	paths := strings.Split(strings.TrimSpace(string(out)), "\n")
+	paths = append(paths, scanApplicationPaths(applicationRoots())...)
+	return r.appsFromPaths(paths, applicationRoots())
 }
 
 // ─── System Settings Pane Discovery ───────────────────────────────────────
@@ -127,47 +89,8 @@ func (r *CommandRepo) DiscoverSettingsPanes() []model.CommandInfo {
 // ─── Directory Scan (fallback) ─────────────────────────────────────────────
 
 func (r *CommandRepo) DiscoverAppsDir() ([]model.CommandInfo, error) {
-	searchDirs := []string{
-		"/Applications",
-		"/System/Applications",
-		"/System/Applications/Utilities",
-		filepath.Join(os.Getenv("HOME"), "Applications"),
-	}
-
-	seen := map[string]bool{}
-	var results []model.CommandInfo
-
-	for _, dir := range searchDirs {
-		entries, err := os.ReadDir(dir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if !strings.HasSuffix(e.Name(), ".app") {
-				continue
-			}
-			fullPath := filepath.Join(dir, e.Name())
-			if seen[fullPath] {
-				continue
-			}
-			seen[fullPath] = true
-
-			name := strings.TrimSuffix(e.Name(), ".app")
-			id := "app-" + slugify(name)
-			iconDataURL := r.iconForApp(fullPath)
-
-			results = append(results, model.CommandInfo{
-				ID:          id,
-				Title:       name,
-				Subtitle:    dir,
-				IconDataURL: iconDataURL,
-				Category:    "app",
-				Path:        fullPath,
-			})
-		}
-	}
-
-	return results, nil
+	roots := applicationRoots()
+	return r.appsFromPaths(scanApplicationPaths(roots), roots), nil
 }
 
 // ─── File Search ──────────────────────────────────────────────────────────
@@ -309,13 +232,6 @@ func (r *CommandRepo) LaunchApp(appPath string) error {
 // OpenURL opens a URL in the default browser.
 func (r *CommandRepo) OpenURL(url string) error {
 	return exec.Command("open", url).Run()
-}
-
-// HideWindow hides the main application window.
-func (r *CommandRepo) HideWindow() {
-	if app := application.Get(); app != nil {
-		app.Hide()
-	}
 }
 
 // OpenSystemSettings opens a macOS Settings pane by bundle identifier.

@@ -10,6 +10,7 @@ import (
 
 // SettingsService manages app settings with in-memory cache and window callbacks.
 type SettingsService struct {
+	launchAtLoginFunc    func(bool)
 	mu                   sync.RWMutex
 	cache                *model.AppSettings
 	repo                 *repo.SettingsRepo
@@ -23,8 +24,17 @@ type SettingsService struct {
 
 // NewSettingsService creates a new settings service.
 func NewSettingsService(r *repo.SettingsRepo) *SettingsService {
-	return &SettingsService{repo: r}
+	return &SettingsService{repo: r, launchAtLoginFunc: func(enabled bool) {
+		if enabled {
+			_ = autostart.Enable()
+		} else {
+			_ = autostart.Disable()
+		}
+	}}
 }
+
+// SetLaunchAtLoginFunc overrides system integration before services start. Nil disables it.
+func (s *SettingsService) SetLaunchAtLoginFunc(fn func(bool)) { s.launchAtLoginFunc = fn }
 
 func (s *SettingsService) SetOpenSettingsFunc(fn func()) {
 	s.openSettingsFunc = fn
@@ -103,6 +113,10 @@ func (s *SettingsService) SaveSettings(updated model.AppSettings) (*model.AppSet
 		previousShortcut = current.GlobalShortcut
 	}
 
+	if updated.WindowMaterial == "" {
+		updated.WindowMaterial = repo.DefaultSettings.WindowMaterial
+	}
+
 	// Apply defaults for blank fields
 	if updated.GlobalShortcut == "" {
 		updated.GlobalShortcut = repo.DefaultSettings.GlobalShortcut
@@ -116,19 +130,14 @@ func (s *SettingsService) SaveSettings(updated model.AppSettings) (*model.AppSet
 	if updated.ThemeMode == "" {
 		updated.ThemeMode = repo.DefaultSettings.ThemeMode
 	}
-	if updated.AI.OllamaBaseUrl == "" {
-		updated.AI.OllamaBaseUrl = repo.DefaultAI.OllamaBaseUrl
-	}
-	if updated.AI.DefaultModel == "" {
-		updated.AI.DefaultModel = repo.DefaultAI.DefaultModel
+
+	if err := s.repo.Save(updated); err != nil {
+		s.mu.Unlock()
+		return nil, err
 	}
 
-	_ = s.repo.Save(updated)
-
-	if updated.LaunchAtLogin {
-		_ = autostart.Enable()
-	} else {
-		_ = autostart.Disable()
+	if s.launchAtLoginFunc != nil {
+		s.launchAtLoginFunc(updated.LaunchAtLogin)
 	}
 
 	if s.toggleSystemTrayFunc != nil {
@@ -177,15 +186,6 @@ func (s *SettingsService) GetGlobalHotkey() string {
 		return v
 	}
 	return st.GlobalShortcut
-}
-
-// GetSkills returns skills discovered at the configured SkillsPath.
-func (s *SettingsService) GetSkills() ([]model.Skill, error) {
-	st, err := s.GetSettings()
-	if err != nil {
-		return nil, err
-	}
-	return s.repo.GetSkills(st.SkillsPath)
 }
 
 // ResetCache forces a reload from disk on next access.

@@ -71,7 +71,7 @@ func (s *ClipboardService) poll() {
 		case <-s.stopCh:
 			return
 		case <-ticker.C:
-			content, ctype := s.repo.ReadClipboard()
+			content, ctype := s.repo.ReadClipboardIfChanged()
 			if content == "" {
 				continue
 			}

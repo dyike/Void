@@ -9,7 +9,6 @@ var ProviderSet = wire.NewSet(
 	NewSettingsService,
 	NewCommandService,
 	NewClipboardService,
-	NewAIService,
 	NewSnippetService,
 	NewCalculatorService,
 	NewScriptsService,

@@ -22,6 +22,11 @@ package repo
 
 // ── Configurable hotkey ───────────────────────────────────────────────────
 
+static int g_hotkeyRecording = 0;
+static void setHotkeyRecording(int recording) {
+ __atomic_store_n(&g_hotkeyRecording, recording, __ATOMIC_RELEASE);
+}
+
 static CGKeyCode  g_keyCode   = 49;                          // Space
 static int        g_modifiers = kCGEventFlagMaskAlternate;   // Option
 
@@ -345,6 +350,11 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
         return event;
     }
 
+    if (__atomic_load_n(&g_hotkeyRecording, __ATOMIC_ACQUIRE)) {
+        if (type == kCGEventKeyDown) snippetBufClear();
+        return event;
+    }
+
     if (type == kCGEventKeyDown) {
         g_all_events++;
         CGKeyCode keyCode = (CGKeyCode)CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
@@ -353,7 +363,7 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, CGEv
                                     kCGEventFlagMaskControl   | kCGEventFlagMaskShift));
 
         if (keyCode == g_keyCode && masked == g_modifiers) {
-            hotkey_fired = 1;
+            if (!CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat)) hotkey_fired = 1;
             return NULL;
         }
 
@@ -784,4 +794,13 @@ func (r *HotkeyRepo) SetClipboardText(text string) {
 // PasteClipboard sends a Cmd+V key event to paste clipboard content.
 func (r *HotkeyRepo) PasteClipboard() {
 	C.pasteClipboard()
+}
+
+// SetHotkeyRecording temporarily passes keys through the tap to the recorder.
+func (r *HotkeyRepo) SetHotkeyRecording(recording bool) {
+	value := 0
+	if recording {
+		value = 1
+	}
+	C.setHotkeyRecording(C.int(value))
 }

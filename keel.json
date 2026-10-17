@@ -1,0 +1,10 @@
+{
+  "name": "Void",
+  "appid": "com.dyike.void",
+  "version": "0.1.0",
+  "build": 1,
+  "binary": "void",
+  "icon": "internal/branding/app.png",
+  "main": ".",
+  "macos": {"accessory": true}
+}
