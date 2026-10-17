@@ -10,7 +10,7 @@ import (
 	"github.com/dyike/Void/internal/repo"
 )
 
-// ContainerService exposes Apple Container workflows to the Wails frontend.
+// ContainerService exposes Apple Container workflows to the native UI.
 type ContainerService struct {
 	repo     *repo.ContainerRepo
 	settings *SettingsService

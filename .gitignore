@@ -1,6 +1,7 @@
-.task
-bin
-frontend/dist
-frontend/node_modules
-build/linux/appimage/build
-build/windows/nsis/MicrosoftEdgeWebview2Setup.exe
+.task/
+bin/
+dist/
+*.syso
+# Local Keel development overrides
+go.work
+go.work.sum

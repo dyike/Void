@@ -19,6 +19,7 @@ var running atomic.Bool
 // HotkeyService manages global hotkey registration and snippet auto-expansion.
 type HotkeyService struct {
 	repo            *repo.HotkeyRepo
+	recording       atomic.Bool
 	snippetMu       sync.RWMutex
 	snippetLookup   SnippetLookupFn
 	snippetPrefixes func() []string
@@ -77,7 +78,7 @@ func (s *HotkeyService) startTap(h func()) bool {
 
 	go func() {
 		for running.Load() {
-			if s.repo.PollHotkey() {
+			if s.repo.PollHotkey() && !s.recording.Load() {
 				if s.TryExpandFocusedSnippet() {
 					time.Sleep(20 * time.Millisecond)
 					continue
@@ -195,4 +196,14 @@ func (s *HotkeyService) TryExpandFocusedSnippet() bool {
 	s.repo.ExpandSnippet(deleteChars, replacement)
 	s.repo.ClearSnippetBuffer()
 	return true
+}
+
+// SetRecording lets the shortcut recorder receive the current global chord
+// without launching Void or expanding snippets.
+func (s *HotkeyService) SetRecording(recording bool) {
+	s.recording.Store(recording)
+	s.repo.SetHotkeyRecording(recording)
+	if recording {
+		s.repo.PollHotkey()
+	}
 }

@@ -7,71 +7,85 @@ package repo
 #include <AppKit/AppKit.h>
 #include <stdlib.h>
 
-static char* clipboardFilePaths(void) {
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    NSDictionary *options = @{NSPasteboardURLReadingFileURLsOnlyKey: @YES};
-    NSArray *urls = [pb readObjectsForClasses:@[[NSURL class]] options:options];
-    if (urls == nil || [urls count] == 0) return NULL;
-
-    NSMutableArray *paths = [NSMutableArray arrayWithCapacity:[urls count]];
-    for (NSURL *url in urls) {
-        if ([url isFileURL] && [url path] != nil) {
-            [paths addObject:[url path]];
-        }
+static long long clipboardChangeCount(void) {
+    @autoreleasepool {
+        return (long long)[[NSPasteboard generalPasteboard] changeCount];
     }
-    if ([paths count] == 0) return NULL;
+}
 
-    NSString *joined = [paths componentsJoinedByString:@"\n"];
-    return strdup([joined UTF8String]);
+static char* clipboardFilePaths(void) {
+    @autoreleasepool {
+        NSPasteboard *pb = [NSPasteboard generalPasteboard];
+        NSDictionary *options = @{NSPasteboardURLReadingFileURLsOnlyKey: @YES};
+        NSArray *urls = [pb readObjectsForClasses:@[[NSURL class]] options:options];
+        if (urls == nil || [urls count] == 0) return NULL;
+
+        NSMutableArray *paths = [NSMutableArray arrayWithCapacity:[urls count]];
+        for (NSURL *url in urls) {
+            if ([url isFileURL] && [url path] != nil) {
+                [paths addObject:[url path]];
+            }
+        }
+        if ([paths count] == 0) return NULL;
+
+        NSString *joined = [paths componentsJoinedByString:@"\n"];
+        return strdup([joined UTF8String]);
+    }
 }
 
 static int clipboardPNGToFile(const char *path) {
-    if (path == NULL) return 0;
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    NSData *pngData = [pb dataForType:NSPasteboardTypePNG];
+    @autoreleasepool {
+        if (path == NULL) return 0;
+        NSPasteboard *pb = [NSPasteboard generalPasteboard];
+        NSData *pngData = [pb dataForType:NSPasteboardTypePNG];
 
-    if (pngData == nil) {
-        NSData *tiffData = [pb dataForType:NSPasteboardTypeTIFF];
-        if (tiffData != nil) {
-            NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:tiffData];
-            if (rep != nil) {
-                pngData = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+        if (pngData == nil) {
+            NSData *tiffData = [pb dataForType:NSPasteboardTypeTIFF];
+            if (tiffData != nil) {
+                NSBitmapImageRep *rep = [NSBitmapImageRep imageRepWithData:tiffData];
+                if (rep != nil) {
+                    pngData = [rep representationUsingType:NSBitmapImageFileTypePNG properties:@{}];
+                }
             }
         }
-    }
-    if (pngData == nil || [pngData length] == 0) return 0;
+        if (pngData == nil || [pngData length] == 0) return 0;
 
-    NSString *dest = [NSString stringWithUTF8String:path];
-    return [pngData writeToFile:dest atomically:YES] ? 1 : 0;
+        NSString *dest = [NSString stringWithUTF8String:path];
+        return [pngData writeToFile:dest atomically:YES] ? 1 : 0;
+    }
 }
 
 static int setClipboardFilePaths(const char *pathsText) {
-    if (pathsText == NULL) return 0;
-    NSString *raw = [NSString stringWithUTF8String:pathsText];
-    NSArray *lines = [raw componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
-    NSMutableArray *urls = [NSMutableArray array];
+    @autoreleasepool {
+        if (pathsText == NULL) return 0;
+        NSString *raw = [NSString stringWithUTF8String:pathsText];
+        NSArray *lines = [raw componentsSeparatedByCharactersInSet:[NSCharacterSet newlineCharacterSet]];
+        NSMutableArray *urls = [NSMutableArray array];
 
-    for (NSString *line in lines) {
-        if ([line length] == 0) continue;
-        NSURL *url = [NSURL fileURLWithPath:line];
-        if (url != nil) [urls addObject:url];
+        for (NSString *line in lines) {
+            if ([line length] == 0) continue;
+            NSURL *url = [NSURL fileURLWithPath:line];
+            if (url != nil) [urls addObject:url];
+        }
+        if ([urls count] == 0) return 0;
+
+        NSPasteboard *pb = [NSPasteboard generalPasteboard];
+        [pb clearContents];
+        return [pb writeObjects:urls] ? 1 : 0;
     }
-    if ([urls count] == 0) return 0;
-
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    [pb clearContents];
-    return [pb writeObjects:urls] ? 1 : 0;
 }
 
 static int setClipboardPNGFile(const char *path) {
-    if (path == NULL) return 0;
-    NSString *src = [NSString stringWithUTF8String:path];
-    NSData *data = [NSData dataWithContentsOfFile:src];
-    if (data == nil || [data length] == 0) return 0;
+    @autoreleasepool {
+        if (path == NULL) return 0;
+        NSString *src = [NSString stringWithUTF8String:path];
+        NSData *data = [NSData dataWithContentsOfFile:src];
+        if (data == nil || [data length] == 0) return 0;
 
-    NSPasteboard *pb = [NSPasteboard generalPasteboard];
-    [pb clearContents];
-    return [pb setData:data forType:NSPasteboardTypePNG] ? 1 : 0;
+        NSPasteboard *pb = [NSPasteboard generalPasteboard];
+        [pb clearContents];
+        return [pb setData:data forType:NSPasteboardTypePNG] ? 1 : 0;
+    }
 }
 */
 import "C"
@@ -100,9 +114,11 @@ const maxClipboardHistory = 100
 
 // ClipboardRepo manages clipboard history persistence and read/write operations.
 type ClipboardRepo struct {
-	mu      sync.RWMutex
-	history []model.ClipboardItem
-	dataDir string
+	readMu        sync.Mutex
+	clipboardRead clipboardReadState
+	mu            sync.RWMutex
+	history       []model.ClipboardItem
+	dataDir       string
 }
 
 // NewClipboardRepo creates a new clipboard repo.
@@ -209,6 +225,14 @@ func (r *ClipboardRepo) Clear() {
 	defer r.mu.Unlock()
 	r.history = nil
 	r.saveToDisk()
+}
+
+// ReadClipboardIfChanged avoids decoding images and writing assets again while
+// NSPasteboard's change count is unchanged. File/text/image priority is retained.
+func (r *ClipboardRepo) ReadClipboardIfChanged() (content, ctype string) {
+	r.readMu.Lock()
+	defer r.readMu.Unlock()
+	return r.clipboardRead.read(func() int64 { return int64(C.clipboardChangeCount()) }, r.ReadClipboard)
 }
 
 // ReadClipboard reads the current system clipboard content.

@@ -8,21 +8,18 @@ import (
 	"github.com/dyike/Void/internal/service"
 	"github.com/dyike/Void/internal/window"
 	"github.com/google/wire"
-	"github.com/wailsapp/wails/v3/pkg/services/dock"
 )
 
-// AppServices holds all instantiated services for injection into Wails.
+// AppServices holds all instantiated services for use by the native UI.
 type AppServices struct {
 	SettingsService  *service.SettingsService
 	CommandsService  *service.CommandService
 	ClipboardService *service.ClipboardService
-	AiService        *service.AIService
 	SnippetsService  *service.SnippetService
 	CalcService      *service.CalculatorService
 	ScriptsService   *service.ScriptsService
 	ContainerService *service.ContainerService
 	HotkeyService    *service.HotkeyService
-	DockService      *dock.DockService
 	WindowManager    *window.Manager
 }
 
@@ -37,7 +34,6 @@ var ServiceProviderSet = wire.NewSet(
 	repo.ProviderSet,
 	service.ProviderSet,
 	window.ProviderSet,
-	dock.New,
 	ProvideAppServices,
 	ProvideInitializedApp,
 )
@@ -47,26 +43,22 @@ func ProvideAppServices(
 	settingsSvc *service.SettingsService,
 	commandsSvc *service.CommandService,
 	clipboardSvc *service.ClipboardService,
-	aiSvc *service.AIService,
 	snippetsSvc *service.SnippetService,
 	calcSvc *service.CalculatorService,
 	scriptsSvc *service.ScriptsService,
 	containerSvc *service.ContainerService,
 	hotkeySvc *service.HotkeyService,
-	dockSvc *dock.DockService,
 	winManager *window.Manager,
 ) *AppServices {
 	return &AppServices{
 		SettingsService:  settingsSvc,
 		CommandsService:  commandsSvc,
 		ClipboardService: clipboardSvc,
-		AiService:        aiSvc,
 		SnippetsService:  snippetsSvc,
 		CalcService:      calcSvc,
 		ScriptsService:   scriptsSvc,
 		ContainerService: containerSvc,
 		HotkeyService:    hotkeySvc,
-		DockService:      dockSvc,
 		WindowManager:    winManager,
 	}
 }

@@ -37,7 +37,7 @@ func getExecutablePath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	// Note: Wails builds a .app bundle on macOS. os.Executable() returns the path to the internal binary
+	// Note: Keel builds a .app bundle on macOS. os.Executable() returns the path to the internal binary
 	// e.g. /Applications/Void.app/Contents/MacOS/Void
 	return execPath, nil
 }

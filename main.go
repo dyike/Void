@@ -1,7 +1,7 @@
 package main
 
 import (
-	"embed"
+	"flag"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,120 +9,121 @@ import (
 	"time"
 
 	"github.com/dyike/Void/internal/service"
-	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/dyike/Void/internal/window"
+	"github.com/dyike/keel/ui/core"
+	keelwindow "github.com/dyike/keel/ui/window"
 )
 
-//go:embed all:frontend/dist
-var assets embed.FS
-
 func main() {
-	// Data directory: ~/Library/Application Support/Void
-	homeDir, err := os.UserHomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		log.Fatal("cannot find home directory:", err)
-	}
-	dataDir := filepath.Join(homeDir, "Library", "Application Support", "Void")
-	if err := os.MkdirAll(dataDir, 0755); err != nil {
-		log.Fatal("cannot create data directory:", err)
-	}
-
-	// Instantiate services
-	appContainer, err := InitApp(dataDir)
-	if err != nil {
-		log.Fatal("failed to initialize dependencies:", err)
-	}
-	svc := appContainer.Services
-
-	// Start background clipboard polling
-	svc.ClipboardService.Start()
-	defer svc.ClipboardService.Stop()
-
-	// Pre-warm the command cache in the background
-	go func() {
-		if _, err := svc.CommandsService.RefreshCommands(); err != nil {
-			log.Println("command refresh error:", err)
-		}
-	}()
-
-	// Expose Settings callbacks to the Settings service
-	svc.SettingsService.SetOpenSettingsFunc(svc.WindowManager.OpenSettings)
-	svc.SettingsService.SetResizeSettingsFunc(svc.WindowManager.ResizeSettings)
-	svc.SettingsService.SetResizeMainFunc(svc.WindowManager.ResizeMain)
-	svc.SettingsService.SetShowSettingsFunc(svc.WindowManager.ShowSettings)
-	svc.SettingsService.SetToggleSystemTrayFunc(svc.WindowManager.ToggleSystemTray)
-
-	var hotkeyMu sync.Mutex
-	startHotkey := func(keySpec string) bool {
-		hotkeyMu.Lock()
-		defer hotkeyMu.Unlock()
-
-		svc.HotkeyService.Stop()
-		if started := svc.HotkeyService.Start(svc.WindowManager.ToggleLauncher, keySpec); started {
-			log.Printf("hotkey: active (%s)", keySpec)
-			svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
-			return true
-		}
-		return false
-	}
-
-	service.RegisterSettingsHotkeyChangedFunc(svc.SettingsService, func(spec string) {
-		go func() {
-			log.Printf("hotkey: restarting (%s)", spec)
-			if !startHotkey(spec) {
-				log.Println("hotkey: restart pending — grant Accessibility and Input Monitoring permissions in System Settings → Privacy & Security")
-			}
-		}()
-	})
-
-	app := application.New(application.Options{
-		Name:        "Void",
-		Description: "A powerful launcher for macOS",
-		Services: []application.Service{
-			application.NewService(svc.SettingsService),
-			application.NewService(svc.CommandsService),
-			application.NewService(svc.ClipboardService),
-			application.NewService(svc.AiService),
-			application.NewService(svc.SnippetsService),
-			application.NewService(svc.CalcService),
-			application.NewService(svc.ScriptsService),
-			application.NewService(svc.ContainerService),
-			application.NewService(svc.DockService),
-		},
-		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
-		},
-		Mac: application.MacOptions{
-			ApplicationShouldTerminateAfterLastWindowClosed: false,
-			ActivationPolicy: application.ActivationPolicyAccessory,
-		},
-	})
-
-	// Initialize the main window and system tray via Manager
-	svc.WindowManager.SetSettingsService(svc.SettingsService)
-	svc.WindowManager.SetDockService(svc.DockService)
-	svc.WindowManager.Init(app)
-	svc.WindowManager.CreateMainWindow("/")
-
-	// ── Global Hotkey (Option+Space via CGEventTap) ───────────────────────
-	go func() {
-		time.Sleep(500 * time.Millisecond)
-		retryDelay := 60 * time.Second
-		for attempt := 1; ; attempt++ {
-			keySpec := svc.SettingsService.GetGlobalHotkey()
-			if startHotkey(keySpec) {
-				return
-			}
-			if attempt == 1 || attempt%5 == 0 {
-				log.Println("hotkey: waiting for Accessibility and Input Monitoring permissions in System Settings → Privacy & Security")
-			}
-			time.Sleep(retryDelay)
-		}
-	}()
-
-	defer svc.HotkeyService.Stop()
-
-	// Run
-	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
+	dataDir := flag.String("data-dir", filepath.Join(home, "Library", "Application Support", "Void"), "application data directory")
+	preview := flag.Bool("preview", false, "show the UI without global hotkeys, clipboard polling or login integration")
+	material := flag.String("material", "", "window material: clear, regular or frosted")
+	backdrop := flag.Bool("preview-backdrop", false, "show a colored reference behind the launcher for material diagnostics")
+	screenshot := flag.String("screenshot", "", "render the launcher to a PNG and exit")
+	flag.Parse()
+	if err := os.MkdirAll(*dataDir, 0755); err != nil {
+		log.Fatal(err)
+	}
+	container, err := InitApp(*dataDir)
+	if err != nil {
+		log.Fatal(err)
+	}
+	svc := container.Services
+	manager := svc.WindowManager
+	manager.SetPreview(*preview)
+	manager.Init(window.Services{
+		ShortcutRecording: svc.HotkeyService.SetRecording,
+		Settings:          svc.SettingsService, Commands: svc.CommandsService,
+		Clipboard: svc.ClipboardService,
+		Snippets:  svc.SnippetsService, Calculator: svc.CalcService,
+		Scripts: svc.ScriptsService, Containers: svc.ContainerService,
+	})
+	if err := manager.SetGlassStyle(*material); err != nil {
+		log.Fatal(err)
+	}
+	if *screenshot != "" {
+		if err := manager.Screenshot(*screenshot); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+	if err := setFallbackAppIcon(); err != nil {
+		log.Print(err)
+	}
+	svc.CommandsService.SetHideWindowFunc(func() { core.Update(manager.HideLauncher) })
+	svc.SettingsService.SetOpenSettingsFunc(func() { core.Update(manager.OpenSettings) })
+	svc.SettingsService.SetResizeSettingsFunc(func(w, h int) { core.Update(func() { manager.ResizeSettings(w, h) }) })
+	svc.SettingsService.SetResizeMainFunc(func(w, h int) { core.Update(func() { manager.ResizeMain(w, h) }) })
+	svc.SettingsService.SetShowSettingsFunc(func() { core.Update(manager.ShowSettings) })
+	headless := os.Getenv("KEEL_HEADLESS") == "1" || *preview
+	if headless {
+		svc.SettingsService.SetLaunchAtLoginFunc(nil)
+	} else {
+		svc.SettingsService.SetToggleSystemTrayFunc(manager.ToggleSystemTray)
+	}
+	if !headless {
+		svc.ClipboardService.Start()
+	}
+	var hotkeyMu sync.Mutex
+	done := make(chan struct{})
+	startHotkey := func(spec string) bool {
+		if headless {
+			return false
+		}
+		hotkeyMu.Lock()
+		defer hotkeyMu.Unlock()
+		select {
+		case <-done:
+			return false
+		default:
+		}
+		svc.HotkeyService.Stop()
+		if !svc.HotkeyService.Start(func() { core.Update(manager.ToggleLauncher) }, spec) {
+			return false
+		}
+		svc.HotkeyService.StartSnippetExpand(svc.SnippetsService.ExpandSnippet, svc.SnippetsService.GetAllPrefixes)
+		return true
+	}
+	service.RegisterSettingsHotkeyChangedFunc(svc.SettingsService, func(spec string) { go startHotkey(spec) })
+	// Native tray creation must run outside the UI frame lock.
+	if !headless {
+		manager.ToggleSystemTrayInitial()
+	}
+	if *backdrop {
+		manager.OpenPreviewBackdrop()
+	}
+	manager.ShowLauncher()
+	go func() {
+		if headless {
+			return
+		}
+		timer := time.NewTimer(500 * time.Millisecond)
+		defer timer.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-timer.C:
+			}
+			if startHotkey(svc.SettingsService.GetGlobalHotkey()) {
+				return
+			}
+			log.Print("hotkey: grant Accessibility and Input Monitoring permissions in System Settings")
+			timer.Reset(time.Minute)
+		}
+	}()
+	keelwindow.MainWithOptions(keelwindow.MainOptions{KeepAlive: true, OnQuit: func() {
+		close(done)
+		hotkeyMu.Lock()
+		svc.HotkeyService.Stop()
+		hotkeyMu.Unlock()
+		if !headless {
+			svc.ClipboardService.Stop()
+		}
+		manager.Close()
+	}})
 }

@@ -12,13 +12,14 @@ import (
 
 // CommandService discovers and caches macOS commands.
 type CommandService struct {
-	mu        sync.RWMutex
-	cache     []model.CommandInfo
-	cacheTime time.Time
-	cacheTTL  time.Duration
-	frecency  *FrecencyStore
-	settings  *SettingsService
-	repo      *repo.CommandRepo
+	mu         sync.RWMutex
+	cache      []model.CommandInfo
+	cacheTime  time.Time
+	cacheTTL   time.Duration
+	frecency   *FrecencyStore
+	settings   *SettingsService
+	repo       *repo.CommandRepo
+	hideWindow func()
 }
 
 // NewCommandService creates a new commands service.
@@ -97,9 +98,13 @@ func (s *CommandService) OpenURL(url string) error {
 	return s.repo.OpenURL(url)
 }
 
+func (s *CommandService) SetHideWindowFunc(fn func()) { s.hideWindow = fn }
+
 // HideWindow hides the main application window.
 func (s *CommandService) HideWindow() {
-	s.repo.HideWindow()
+	if s.hideWindow != nil {
+		s.hideWindow()
+	}
 }
 
 // OpenSystemSettings opens a macOS Settings pane by bundle identifier.
@@ -154,10 +159,7 @@ func systemCommands() []model.CommandInfo {
 			ID: "system-clipboard-manager", Title: "Clipboard History",
 			Subtitle: "Browse your clipboard history", Icon: "Clipboard", Category: "system",
 		},
-		{
-			ID: "system-ai-chat", Title: "AI Chat",
-			Subtitle: "Chat with AI assistant", Icon: "Sparkles", Category: "system",
-		},
+
 		{
 			ID: "system-snippets", Title: "Snippets",
 			Subtitle: "Manage text snippets", Icon: "FileText", Category: "system",
@@ -170,6 +172,9 @@ func systemCommands() []model.CommandInfo {
 			ID: "system-apple-containers", Title: "Apple Containers",
 			Subtitle: "Manage Apple container workloads", Icon: "Container", Category: "system",
 		},
+		{ID: "system-file-search", Title: "File Search", Subtitle: "Search files by name", Icon: "Search", Category: "system"},
+		{ID: "system-file-contents", Title: "Search File Contents", Subtitle: "Find text inside files", Icon: "FileText", Category: "system"},
+		{ID: "system-void-settings", Title: "Void Settings", Subtitle: "Configure Void", Icon: "Settings", Category: "system"},
 		// ── macOS system actions ───────────────────
 		{
 			ID: "system-lock-screen", Title: "Lock Screen",

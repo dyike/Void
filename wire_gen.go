@@ -11,7 +11,6 @@ import (
 	"github.com/dyike/Void/internal/service"
 	"github.com/dyike/Void/internal/window"
 	"github.com/google/wire"
-	"github.com/wailsapp/wails/v3/pkg/services/dock"
 )
 
 // Injectors from wire.go:
@@ -24,7 +23,6 @@ func InitApp(dataDir string) (*InitializedApp, error) {
 	commandService := service.NewCommandService(dataDir, settingsService, commandRepo)
 	clipboardRepo := repo.NewClipboardRepo(dataDir)
 	clipboardService := service.NewClipboardService(clipboardRepo)
-	aiService := service.NewAIService(settingsService)
 	snippetRepo := repo.NewSnippetRepo(dataDir)
 	snippetService := service.NewSnippetService(snippetRepo)
 	calculatorRepo := repo.NewCalculatorRepo()
@@ -35,27 +33,24 @@ func InitApp(dataDir string) (*InitializedApp, error) {
 	containerService := service.NewContainerService(containerRepo, settingsService)
 	hotkeyRepo := repo.NewHotkeyRepo()
 	hotkeyService := service.NewHotkeyService(hotkeyRepo)
-	dockService := dock.New()
 	manager := window.NewManager()
-	appServices := ProvideAppServices(settingsService, commandService, clipboardService, aiService, snippetService, calculatorService, scriptsService, containerService, hotkeyService, dockService, manager)
+	appServices := ProvideAppServices(settingsService, commandService, clipboardService, snippetService, calculatorService, scriptsService, containerService, hotkeyService, manager)
 	initializedApp := ProvideInitializedApp(appServices, dataDir)
 	return initializedApp, nil
 }
 
 // wire.go:
 
-// AppServices holds all instantiated services for injection into Wails.
+// AppServices holds all instantiated services for use by the native UI.
 type AppServices struct {
 	SettingsService  *service.SettingsService
 	CommandsService  *service.CommandService
 	ClipboardService *service.ClipboardService
-	AiService        *service.AIService
 	SnippetsService  *service.SnippetService
 	CalcService      *service.CalculatorService
 	ScriptsService   *service.ScriptsService
 	ContainerService *service.ContainerService
 	HotkeyService    *service.HotkeyService
-	DockService      *dock.DockService
 	WindowManager    *window.Manager
 }
 
@@ -66,7 +61,7 @@ type InitializedApp struct {
 }
 
 // ServiceProviderSet aggregates all core service constructors.
-var ServiceProviderSet = wire.NewSet(repo.ProviderSet, service.ProviderSet, window.ProviderSet, dock.New, ProvideAppServices,
+var ServiceProviderSet = wire.NewSet(repo.ProviderSet, service.ProviderSet, window.ProviderSet, ProvideAppServices,
 	ProvideInitializedApp,
 )
 
@@ -75,26 +70,22 @@ func ProvideAppServices(
 	settingsSvc *service.SettingsService,
 	commandsSvc *service.CommandService,
 	clipboardSvc *service.ClipboardService,
-	aiSvc *service.AIService,
 	snippetsSvc *service.SnippetService,
 	calcSvc *service.CalculatorService,
 	scriptsSvc *service.ScriptsService,
 	containerSvc *service.ContainerService,
 	hotkeySvc *service.HotkeyService,
-	dockSvc *dock.DockService,
 	winManager *window.Manager,
 ) *AppServices {
 	return &AppServices{
 		SettingsService:  settingsSvc,
 		CommandsService:  commandsSvc,
 		ClipboardService: clipboardSvc,
-		AiService:        aiSvc,
 		SnippetsService:  snippetsSvc,
 		CalcService:      calcSvc,
 		ScriptsService:   scriptsSvc,
 		ContainerService: containerSvc,
 		HotkeyService:    hotkeySvc,
-		DockService:      dockSvc,
 		WindowManager:    winManager,
 	}
 }
